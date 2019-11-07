@@ -135,7 +135,7 @@ func Run(app App) error {
 
 	lis, err := net.Listen("tcp", config.ListenAddress)
 	if err != nil {
-		logger.WithError(err).Error("failed to listen on %s", config.ListenAddress)
+		logger.WithError(err).Errorf("failed to listen on %s", config.ListenAddress)
 	}
 
 	serv := grpc.NewServer()
