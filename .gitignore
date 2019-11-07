@@ -1,5 +1,6 @@
 .DS_Store
 .*
+!.circleci/
 !.travis.yml
 !.codecov.yml
 !.gitignore
