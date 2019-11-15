@@ -67,7 +67,7 @@ func Run(app App) error {
 	viper.BindEnv("log_level", "LOG_LEVEL")
 	viper.BindEnv("log_type", "LOG_TYPE")
 
-	logger := logrus.StandardLogger().WithField("type", "meridian/app")
+	logger := logrus.StandardLogger().WithField("type", "agora/app")
 
 	// viper.ReadInConfig only returns ConfigFileNotFoundError if it has to search
 	// for a default config file because one hasn't been explicitly set. That is,

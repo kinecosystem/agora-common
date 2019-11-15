@@ -1,4 +1,4 @@
-module github.com/kinecosystem/meridian-common
+module github.com/kinecosystem/agora-common
 
 go 1.13
 

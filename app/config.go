@@ -8,7 +8,7 @@ import (
 // It is passed to the App.Init function, and is optional.
 type AppConfig map[string]interface{}
 
-// Config contains the base configuration for meridian services, as well as the
+// Config contains the base configuration for agora services, as well as the
 // application itself.
 type Config struct {
 	LogLevel string `mapstructure:"log_level"`
