@@ -12,7 +12,10 @@ import (
 	"syscall"
 	"time"
 
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -138,8 +141,18 @@ func Run(app App) error {
 		logger.WithError(err).Errorf("failed to listen on %s", config.ListenAddress)
 	}
 
-	serv := grpc.NewServer()
+	serv := grpc.NewServer(
+		grpc_middleware.WithUnaryServerChain(
+			grpc_prometheus.UnaryServerInterceptor,
+		),
+		grpc_middleware.WithStreamServerChain(
+			grpc_prometheus.StreamServerInterceptor,
+		),
+	)
 	app.RegisterWithGRPC(serv)
+
+	grpc_prometheus.Register(serv)
+	debugHTTPMux.Handle("/metrics", promhttp.Handler())
 
 	servShutdownCh := make(chan struct{})
 
