@@ -19,6 +19,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 // App is a long lived application that services network requests.
@@ -149,10 +151,12 @@ func Run(app App) error {
 			grpc_prometheus.StreamServerInterceptor,
 		),
 	)
-	app.RegisterWithGRPC(serv)
 
+	app.RegisterWithGRPC(serv)
 	grpc_prometheus.Register(serv)
 	debugHTTPMux.Handle("/metrics", promhttp.Handler())
+
+	healthgrpc.RegisterHealthServer(serv, health.NewServer())
 
 	servShutdownCh := make(chan struct{})
 
