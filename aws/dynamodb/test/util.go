@@ -34,7 +34,7 @@ func StartDynamoDB(pool *dockertest.Pool) (db dynamodbiface.ClientAPI, closeFunc
 		}
 	}
 
-	port := resource.GetPort("8000/tcp")
+	address := resource.GetHostPort("8000/tcp")
 
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
@@ -45,7 +45,7 @@ func StartDynamoDB(pool *dockertest.Pool) (db dynamodbiface.ClientAPI, closeFunc
 	cfg.Region = "test-region-1"
 
 	cfg.Credentials = aws.NewStaticCredentialsProvider("test", "test", "test")
-	cfg.EndpointResolver = aws.ResolveWithEndpointURL(fmt.Sprintf("http://localhost:%s", port))
+	cfg.EndpointResolver = aws.ResolveWithEndpointURL(fmt.Sprintf("http://%s", address))
 
 	return dynamodb.New(cfg), closeFunc, nil
 }
