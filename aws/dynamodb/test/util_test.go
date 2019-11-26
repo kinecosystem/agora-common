@@ -4,11 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ory/dockertest"
-	"github.com/stretchr/testify/require"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/ory/dockertest"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStartDynamoDB(t *testing.T) {

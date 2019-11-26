@@ -6,12 +6,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
 	"github.com/ory/dockertest"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/dynamodbiface"
 )
 
 const (
