@@ -1,7 +1,11 @@
 package kin
 
 import (
+	"encoding/base64"
+
 	"github.com/pkg/errors"
+
+	"github.com/kinecosystem/go/xdr"
 )
 
 // todo: formalize
@@ -55,6 +59,42 @@ func NewMemo(v byte, t TransactionType, appIndex uint16, foreignKey []byte) (m M
 		// apply first 6-bits of next byte
 		m[i] = (foreignKey[i-4] >> 6) & 0x3
 		m[i] = (foreignKey[i-3] & 0x3f) << 2
+	}
+
+	return m, nil
+}
+
+// MemoFromXDR returns a Memo from an xdr.Memo, provided it
+// is a valid (or strictly valid) memo.
+func MemoFromXDR(xm xdr.Memo, strict bool) (m Memo, ok bool) {
+	if xm.Hash == nil {
+		return m, false
+	}
+
+	m = Memo(*xm.Hash)
+	if strict {
+		return m, IsValidMemoStrict(m)
+	}
+
+	return m, IsValidMemo(m)
+}
+
+// MemoFromXDRString returns a Memo from a standard base64
+// encoded xdr.Memo,  provided it is valid (or strictly) valid memo.
+func MemoFromXDRString(b64 string, strict bool) (m Memo, err error) {
+	b, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		return m, errors.Wrap(err, "invalid b64")
+	}
+
+	var xm xdr.Memo
+	if err := xm.UnmarshalBinary(b); err != nil {
+		return m, errors.Wrap(err, "invalid memo")
+	}
+
+	m, ok := MemoFromXDR(xm, strict)
+	if !ok {
+		return m, errors.New("not a kin.Memo")
 	}
 
 	return m, nil

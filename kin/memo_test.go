@@ -1,8 +1,11 @@
 package kin
 
 import (
+	"encoding/base64"
 	"math"
 	"testing"
+
+	"github.com/kinecosystem/go/xdr"
 
 	"github.com/stretchr/testify/require"
 )
@@ -97,4 +100,73 @@ func TestMemo_Invalid(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, IsValidMemo(m))
 	require.False(t, IsValidMemoStrict(m))
+}
+
+func TestMemoFromXDR(t *testing.T) {
+	s := "hello"
+
+	validMemo, _ := NewMemo(2, TransactionTypeEarn, 1, make([]byte, 29))
+	strictlyValidMemo, _ := NewMemo(1, TransactionTypeEarn, 1, make([]byte, 29))
+
+	h := func(m Memo) *xdr.Hash {
+		xh := xdr.Hash(m)
+		return &xh
+	}
+
+	invalidMemos := []xdr.Memo{
+		{
+			Text: &s,
+		},
+		{
+			Hash: &xdr.Hash{},
+		},
+		{},
+	}
+	strictlyInvalidMemos := []xdr.Memo{
+		{
+			Text: &s,
+		},
+		{
+			Hash: &xdr.Hash{},
+		},
+		{
+			Hash: h(validMemo),
+		},
+	}
+
+	for _, m := range invalidMemos {
+		_, valid := MemoFromXDR(m, false)
+		require.False(t, valid)
+
+		b, err := m.MarshalBinary()
+		require.NoError(t, err)
+
+		_, err = MemoFromXDRString(base64.StdEncoding.EncodeToString(b), false)
+		require.NotNil(t, err)
+	}
+	for _, m := range strictlyInvalidMemos {
+		_, valid := MemoFromXDR(m, true)
+		require.False(t, valid)
+
+		b, err := m.MarshalBinary()
+		require.NoError(t, err)
+
+		_, err = MemoFromXDRString(base64.StdEncoding.EncodeToString(b), false)
+		require.NotNil(t, err)
+	}
+
+	actual, valid := MemoFromXDR(xdr.Memo{Hash: h(validMemo)}, false)
+	require.True(t, valid)
+	require.Equal(t, validMemo, actual)
+
+	_, valid = MemoFromXDR(xdr.Memo{Hash: h(validMemo)}, true)
+	require.False(t, valid)
+
+	actual, valid = MemoFromXDR(xdr.Memo{Hash: h(strictlyValidMemo)}, false)
+	require.True(t, valid)
+	require.Equal(t, strictlyValidMemo, actual)
+
+	_, valid = MemoFromXDR(xdr.Memo{Hash: h(strictlyValidMemo)}, true)
+	require.True(t, valid)
+	require.Equal(t, strictlyValidMemo, actual)
 }
