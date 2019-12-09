@@ -171,7 +171,8 @@ func (m Memo) AppIndex() uint16 {
 }
 
 // ForeignKey returns the foreign key of the memo.
-func (m Memo) ForeignKey() (fk [29]byte) {
+func (m Memo) ForeignKey() (fk []byte) {
+	fk = make([]byte, 29)
 	for i := 0; i < 28; i++ {
 		fk[i] |= m[i+3] >> 2
 		fk[i] |= m[i+4] & 0x3 << 6
