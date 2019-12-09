@@ -8,7 +8,7 @@ import (
 // AgoraEnvironment is used to determine which environment the application is currently running in
 type AgoraEnvironment string
 
-var (
+const (
 	// AgoraEnvironmentProd is the production environment
 	AgoraEnvironmentProd AgoraEnvironment = "prod"
 
