@@ -3,16 +3,18 @@ package kin
 import (
 	"net/http"
 
+	"github.com/stellar/go/clients/horizonclient"
+
 	agoraenv "github.com/kinecosystem/agora-common/env"
 	"github.com/kinecosystem/go/build"
 	"github.com/kinecosystem/go/clients/horizon"
 )
 
 const (
-	// prodHorizonUrl is the URL of the production Kin Horizon server
-	prodHorizonUrl = "https://horizon.kinfederation.com"
-	// testHorizonUrl is the URL of the test Kin Horizon server
-	testHorizonUrl = "https://horizon-testnet.kininfrastructure.com"
+	// prodHorizonURL is the URL of the production Kin Horizon server
+	prodHorizonURL = "https://horizon.kinfederation.com"
+	// testHorizonURL is the URL of the test Kin Horizon server
+	testHorizonURL = "https://horizon-testnet.kininfrastructure.com"
 
 	// prodHorizonPassphrase is the passphrase for the production Kin network
 	prodHorizonPassphrase = "Kin Mainnet ; December 2018"
@@ -23,14 +25,28 @@ const (
 var (
 	// kinProdHorizonClient is the Horizon Client that should be used to interact with the production Kin network
 	kinProdHorizonClient = &horizon.Client{
-		URL:  prodHorizonUrl,
+		URL:  prodHorizonURL,
 		HTTP: http.DefaultClient,
 	}
 
 	// kinTestHorizonClient is the Horizon Client that should be used to interact with the test Kin network
 	kinTestHorizonClient = &horizon.Client{
-		URL:  testHorizonUrl,
+		URL:  testHorizonURL,
 		HTTP: http.DefaultClient,
+	}
+
+	// kinProdHorizonClient is the Horizon Client (from stellar) that should be used to interact with the
+	// production Kin network.
+	kinProdHorizonClientV2 = &horizonclient.Client{
+		HorizonURL: prodHorizonURL,
+		HTTP:       http.DefaultClient,
+	}
+
+	// kinProdHorizonClient is the Horizon Client (from stellar) that should be used to interact with the
+	// test Kin network.
+	kinTestHorizonClientV2 = &horizonclient.Client{
+		HorizonURL: testHorizonURL,
+		HTTP:       http.DefaultClient,
 	}
 
 	// prodNetwork is the Network modifier that should be used in transactions on the production Kin network
@@ -51,6 +67,21 @@ func GetClient() (client *horizon.Client, err error) {
 		return kinProdHorizonClient, nil
 	default:
 		return kinTestHorizonClient, nil
+	}
+}
+
+// GetClientV2 returns the default stellar based Horizon client based on which environment the application is running in.
+func GetClientV2() (client *horizonclient.Client, err error) {
+	env, err := agoraenv.FromEnvVariable()
+	if err != nil {
+		return nil, err
+	}
+
+	switch env {
+	case agoraenv.AgoraEnvironmentProd:
+		return kinProdHorizonClientV2, nil
+	default:
+		return kinTestHorizonClientV2, nil
 	}
 }
 
