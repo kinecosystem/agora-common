@@ -25,7 +25,7 @@ require (
 	github.com/prometheus/client_golang v0.9.3
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/viper v1.5.0
-	github.com/stellar/go v0.0.0-20191211203732-552e507ffa37 // indirect
+	github.com/stellar/go v0.0.0-20191211203732-552e507ffa37
 	github.com/stellar/go-xdr v0.0.0-20191025181027-f16312a9bced // indirect
 	github.com/stretchr/testify v1.4.0
 	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914 // indirect

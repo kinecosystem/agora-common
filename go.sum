@@ -267,8 +267,6 @@ github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnIn
 github.com/spf13/viper v0.0.0-20150621231900-db7ff930a189/go.mod h1:A8kyI5cUJhb8N+3pkfONlcEcZbueH6nhAm0Fq7SrnBM=
 github.com/spf13/viper v1.5.0 h1:GpsTwfsQ27oS/Aha/6d1oD7tpKIqWnOA6tgOX9HHkt4=
 github.com/spf13/viper v1.5.0/go.mod h1:AkYRkVJF8TkSG/xet6PzXX+l39KhhXa2pdqVSxnTcn4=
-github.com/stellar/go v0.0.0-20191211175111-3c3d1edab81a h1:oyWbAuAKepGCBIBLfoNtX8qamc0GjoSFpulQC3YjnPM=
-github.com/stellar/go v0.0.0-20191211175111-3c3d1edab81a/go.mod h1:qwCrzcwLEQ3T0vVX5EPksI5o29aSZlFQN7QlR+EKt5U=
 github.com/stellar/go v0.0.0-20191211203732-552e507ffa37 h1:JfZK4KoC8RjmNU9tgJm/5oZFV9to8HnnXFomxLnm1Lg=
 github.com/stellar/go v0.0.0-20191211203732-552e507ffa37/go.mod h1:qwCrzcwLEQ3T0vVX5EPksI5o29aSZlFQN7QlR+EKt5U=
 github.com/stellar/go-xdr v0.0.0-20180917104419-0bc96f33a18e/go.mod h1:gpOLVzy6TVYTQ3LvHSN9RJC700FkhFCpSE82u37aNRM=
