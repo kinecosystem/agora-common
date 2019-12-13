@@ -74,7 +74,7 @@ func GetClient() (client *horizon.Client, err error) {
 //
 // The stellar based client offers some additional niceties, notably around retrieving
 // transaction history. It's generally considered to be a better client, however, the
-// functionaliy _may_ have some divergent behaviour from the kin fork. Therefore, any
+// functionality _may_ have some divergent behaviour from the kin fork. Therefore, any
 // use of this client should be tested thoroughly.
 func GetClientV2() (client *horizonclient.Client, err error) {
 	env, err := agoraenv.FromEnvVariable()
