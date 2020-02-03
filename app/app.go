@@ -64,8 +64,13 @@ func init() {
 	signal.Notify(osSigCh, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGHUP)
 }
 
-func Run(app App) error {
+func Run(app App, options ...Option) error {
 	flag.Parse()
+
+	var opts opts
+	for _, o := range options {
+		o(&opts)
+	}
 
 	viper.BindEnv("listen_address", "LISTEN_ADDRESS")
 	viper.BindEnv("debug_listen_address", "DEBUG_LISTEN_ADDRESS")
@@ -145,10 +150,10 @@ func Run(app App) error {
 
 	serv := grpc.NewServer(
 		grpc_middleware.WithUnaryServerChain(
-			grpc_prometheus.UnaryServerInterceptor,
+			append([]grpc.UnaryServerInterceptor{grpc_prometheus.UnaryServerInterceptor}, opts.unaryServerInterceptors...)...,
 		),
 		grpc_middleware.WithStreamServerChain(
-			grpc_prometheus.StreamServerInterceptor,
+			append([]grpc.StreamServerInterceptor{grpc_prometheus.StreamServerInterceptor}, opts.streamServerInnterceptors...)...,
 		),
 	)
 
