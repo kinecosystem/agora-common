@@ -1,11 +1,13 @@
 package kin
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/stellar/go/clients/horizonclient"
 
 	agoraenv "github.com/kinecosystem/agora-common/env"
+	"github.com/kinecosystem/agora-common/kin/network"
 	"github.com/kinecosystem/go/build"
 	"github.com/kinecosystem/go/clients/horizon"
 )
@@ -55,6 +57,11 @@ var (
 	testNetwork = build.Network{Passphrase: testHorizonPassphrase}
 )
 
+var (
+	// ErrInvalidKinNetwork occurs when an invalid KinNetwork is provided
+	ErrInvalidKinNetwork = errors.New("KinNetwork was not 'mainnet' or 'testnet'")
+)
+
 // GetClient returns the default Horizon client based on which environment the application is running in.
 func GetClient() (client *horizon.Client, err error) {
 	env, err := agoraenv.FromEnvVariable()
@@ -99,6 +106,34 @@ func GetNetwork() (network build.Network, err error) {
 
 	switch env {
 	case agoraenv.AgoraEnvironmentProd:
+		return prodNetwork, nil
+	default:
+		return testNetwork, nil
+	}
+}
+
+// GetClientByKinNetwork returns a Horizon client for the provided Kin network
+func GetClientByKinNetwork(net network.KinNetwork) (client *horizon.Client, err error) {
+	if !net.IsValid() {
+		return nil, ErrInvalidKinNetwork
+	}
+
+	switch net {
+	case network.MainNetwork:
+		return kinProdHorizonClient, nil
+	default:
+		return kinTestHorizonClient, nil
+	}
+}
+
+// GetNetworkByKinNetwork returns a Network modifier for the provided Kin network
+func GetNetworkByKinNetwork(net network.KinNetwork) (buildNetwork build.Network, err error) {
+	if !net.IsValid() {
+		return build.Network{}, ErrInvalidKinNetwork
+	}
+
+	switch net {
+	case network.MainNetwork:
 		return prodNetwork, nil
 	default:
 		return testNetwork, nil
