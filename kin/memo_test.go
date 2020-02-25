@@ -11,7 +11,7 @@ import (
 )
 
 func TestMemo_Valid(t *testing.T) {
-	var empyFK [29]byte
+	var empyFK = make([]byte, 29)
 
 	for v := byte(0); v <= 7; v++ {
 		m, err := NewMemo(v, TransactionTypeEarn, 1, make([]byte, 29))
