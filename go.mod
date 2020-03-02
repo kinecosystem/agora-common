@@ -12,7 +12,9 @@ require (
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/go-errors/errors v1.0.1 // indirect
+	github.com/golang/protobuf v1.3.2
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0

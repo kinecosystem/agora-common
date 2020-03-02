@@ -3,6 +3,7 @@ package testutil
 import (
 	"fmt"
 	"github.com/kinecosystem/agora-common/netutil"
+	"github.com/kinecosystem/agora-common/protobuf/validation"
 	"net"
 	"sync"
 
@@ -35,7 +36,20 @@ func NewServer(opts ...ServerOption) (*grpc.ClientConn, *Server, error) {
 		return nil, nil, errors.Wrapf(err, "failed to start listener")
 	}
 
-	o := serverOpts{}
+	o := serverOpts{
+		unaryClientInterceptors: []grpc.UnaryClientInterceptor{
+			validation.UnaryClientInterceptor(),
+		},
+		streamClientInterceptors: []grpc.StreamClientInterceptor{
+			validation.StreamClientInterceptor(),
+		},
+		unaryServerInterceptors: []grpc.UnaryServerInterceptor{
+			validation.UnaryServerInterceptor(),
+		},
+		streamServerInterceptors: []grpc.StreamServerInterceptor{
+			validation.StreamServerInterceptor(),
+		},
+	}
 
 	for _, opt := range opts {
 		opt(&o)
