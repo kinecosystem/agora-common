@@ -3,6 +3,7 @@ package app
 import (
 	"expvar"
 	"flag"
+	"github.com/kinecosystem/agora-common/protobuf/validation"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -67,7 +68,14 @@ func init() {
 func Run(app App, options ...Option) error {
 	flag.Parse()
 
-	var opts opts
+	opts := opts{
+		unaryServerInterceptors: []grpc.UnaryServerInterceptor{
+			validation.UnaryServerInterceptor(),
+		},
+		streamServerInterceptors: []grpc.StreamServerInterceptor{
+			validation.StreamServerInterceptor(),
+		},
+	}
 	for _, o := range options {
 		o(&opts)
 	}
@@ -153,7 +161,7 @@ func Run(app App, options ...Option) error {
 			append([]grpc.UnaryServerInterceptor{grpc_prometheus.UnaryServerInterceptor}, opts.unaryServerInterceptors...)...,
 		),
 		grpc_middleware.WithStreamServerChain(
-			append([]grpc.StreamServerInterceptor{grpc_prometheus.StreamServerInterceptor}, opts.streamServerInnterceptors...)...,
+			append([]grpc.StreamServerInterceptor{grpc_prometheus.StreamServerInterceptor}, opts.streamServerInterceptors...)...,
 		),
 	)
 

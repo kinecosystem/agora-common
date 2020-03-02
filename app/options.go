@@ -8,8 +8,8 @@ import (
 type Option func(o *opts)
 
 type opts struct {
-	unaryServerInterceptors   []grpc.UnaryServerInterceptor
-	streamServerInnterceptors []grpc.StreamServerInterceptor
+	unaryServerInterceptors  []grpc.UnaryServerInterceptor
+	streamServerInterceptors []grpc.StreamServerInterceptor
 }
 
 // WithUnaryServerInterceptor configures the app's gRPC server to use the provided interceptor.
@@ -28,6 +28,6 @@ func WithUnaryServerInterceptor(interceptor grpc.UnaryServerInterceptor) Option 
 // the app's default interceptors.
 func WithStreamServerInterceptor(interceptor grpc.StreamServerInterceptor) Option {
 	return func(o *opts) {
-		o.streamServerInnterceptors = append(o.streamServerInnterceptors, interceptor)
+		o.streamServerInterceptors = append(o.streamServerInterceptors, interceptor)
 	}
 }
