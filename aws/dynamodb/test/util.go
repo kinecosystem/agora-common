@@ -1,7 +1,9 @@
 package test
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
@@ -10,6 +12,8 @@ import (
 	"github.com/ory/dockertest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"mfycheng.dev/retry"
+	"mfycheng.dev/retry/backoff"
 )
 
 const (
@@ -45,5 +49,19 @@ func StartDynamoDB(pool *dockertest.Pool) (db dynamodbiface.ClientAPI, closeFunc
 	cfg.Credentials = aws.NewStaticCredentialsProvider("test", "test", "test")
 	cfg.EndpointResolver = aws.ResolveWithEndpointURL(fmt.Sprintf("http://%s", address))
 
-	return dynamodb.New(cfg), closeFunc, nil
+	db = dynamodb.New(cfg)
+
+	_, err = retry.Retry(
+		func() error {
+			_, err := db.ListTablesRequest(&dynamodb.ListTablesInput{}).Send(context.Background())
+			return err
+		},
+		retry.Limit(20),
+		retry.Backoff(backoff.Constant(500*time.Second), 500*time.Second),
+	)
+	if err != nil {
+		return nil, closeFunc, errors.Wrap(err, "timed out waiting for dynamodb container to become available")
+	}
+
+	return db, closeFunc, nil
 }

@@ -35,4 +35,5 @@ require (
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11 // indirect
 	google.golang.org/grpc v1.25.1
 	gotest.tools v2.2.0+incompatible // indirect
+	mfycheng.dev/retry v1.1.0
 )
