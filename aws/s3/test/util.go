@@ -1,7 +1,9 @@
 package test
 
 import (
+	"context"
 	"fmt"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
@@ -10,6 +12,8 @@ import (
 	"github.com/ory/dockertest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"mfycheng.dev/retry"
+	"mfycheng.dev/retry/backoff"
 )
 
 const (
@@ -46,6 +50,18 @@ func StartS3(pool *dockertest.Pool) (s3iface.ClientAPI, func(), error) {
 
 	client := s3.New(cfg)
 	client.ForcePathStyle = true
+
+	_, err = retry.Retry(
+		func() error {
+			_, err := client.ListBucketsRequest(&s3.ListBucketsInput{}).Send(context.Background())
+			return err
+		},
+		retry.Limit(20),
+		retry.Backoff(backoff.Constant(500*time.Second), 500*time.Second),
+	)
+	if err != nil {
+		return nil, closeFunc, errors.Wrap(err, "timed out waiting for s3 container to become available")
+	}
 
 	return client, closeFunc, nil
 }
