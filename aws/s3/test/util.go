@@ -1,0 +1,51 @@
+package test
+
+import (
+	"fmt"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/external"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/s3iface"
+	"github.com/ory/dockertest"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+)
+
+const (
+	containerName    = "lphoward/fake-s3"
+	containerVersion = "latest"
+)
+
+// StartS3 starts a mock S3 dockerized server
+func StartS3(pool *dockertest.Pool) (s3iface.ClientAPI, func(), error) {
+	closeFunc := func() {}
+
+	resource, err := pool.Run(containerName, containerVersion, nil)
+	if err != nil {
+		return nil, closeFunc, errors.Wrapf(err, "failed to start resource")
+	}
+
+	closeFunc = func() {
+		if err := pool.Purge(resource); err != nil {
+			logrus.StandardLogger().WithError(err).Warn("Failed to cleanup dynamodb resource")
+		}
+	}
+
+	port := resource.GetPort("4569/tcp")
+
+	cfg, err := external.LoadDefaultAWSConfig()
+	if err != nil {
+		return nil, closeFunc, errors.Wrapf(err, "failed to load default aws config")
+	}
+
+	// Ensure that clients never reach out to a real system
+	cfg.Region = "test-region-1"
+	cfg.Credentials = aws.NewStaticCredentialsProvider("test", "test", "test")
+	cfg.EndpointResolver = aws.ResolveWithEndpointURL(fmt.Sprintf("http://localhost:%s", port))
+
+	client := s3.New(cfg)
+	client.ForcePathStyle = true
+
+	return client, closeFunc, nil
+}
