@@ -17,15 +17,16 @@ import (
 )
 
 const (
-	containerName    = "lphoward/fake-s3"
-	containerVersion = "latest"
+	repository    = "adobe/s3mock"
+	tag = "latest"
 )
 
 // StartS3 starts a mock S3 dockerized server
 func StartS3(pool *dockertest.Pool) (s3iface.ClientAPI, func(), error) {
 	closeFunc := func() {}
 
-	resource, err := pool.Run(containerName, containerVersion, nil)
+	resource, err := pool.Run(repository, tag, nil)
+
 	if err != nil {
 		return nil, closeFunc, errors.Wrapf(err, "failed to start resource")
 	}
@@ -36,7 +37,7 @@ func StartS3(pool *dockertest.Pool) (s3iface.ClientAPI, func(), error) {
 		}
 	}
 
-	port := resource.GetPort("4569/tcp")
+	address := resource.GetHostPort("9090/tcp")
 
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
@@ -46,7 +47,7 @@ func StartS3(pool *dockertest.Pool) (s3iface.ClientAPI, func(), error) {
 	// Ensure that clients never reach out to a real system
 	cfg.Region = "test-region-1"
 	cfg.Credentials = aws.NewStaticCredentialsProvider("test", "test", "test")
-	cfg.EndpointResolver = aws.ResolveWithEndpointURL(fmt.Sprintf("http://localhost:%s", port))
+	cfg.EndpointResolver = aws.ResolveWithEndpointURL(fmt.Sprintf("http://%s", address))
 
 	client := s3.New(cfg)
 	client.ForcePathStyle = true
@@ -57,7 +58,7 @@ func StartS3(pool *dockertest.Pool) (s3iface.ClientAPI, func(), error) {
 			return err
 		},
 		retry.Limit(20),
-		retry.Backoff(backoff.Constant(500*time.Second), 500*time.Second),
+		retry.Backoff(backoff.Constant(10*time.Second), 500*time.Second),
 	)
 	if err != nil {
 		return nil, closeFunc, errors.Wrap(err, "timed out waiting for s3 container to become available")
