@@ -58,7 +58,7 @@ func StartS3(pool *dockertest.Pool) (s3iface.ClientAPI, func(), error) {
 			return err
 		},
 		retry.Limit(20),
-		retry.Backoff(backoff.Constant(10*time.Second), 500*time.Second),
+		retry.Backoff(backoff.Constant(500*time.Millisecond), 500*time.Second),
 	)
 	if err != nil {
 		return nil, closeFunc, errors.Wrap(err, "timed out waiting for s3 container to become available")

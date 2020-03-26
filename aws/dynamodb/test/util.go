@@ -57,7 +57,7 @@ func StartDynamoDB(pool *dockertest.Pool) (db dynamodbiface.ClientAPI, closeFunc
 			return err
 		},
 		retry.Limit(20),
-		retry.Backoff(backoff.Constant(500*time.Second), 500*time.Second),
+		retry.Backoff(backoff.Constant(500*time.Millisecond), 500*time.Second),
 	)
 	if err != nil {
 		return nil, closeFunc, errors.Wrap(err, "timed out waiting for dynamodb container to become available")
