@@ -1,9 +1,9 @@
 package app
 
 import (
+	"crypto/tls"
 	"expvar"
 	"flag"
-	"github.com/kinecosystem/agora-common/protobuf/validation"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -20,8 +20,11 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
+
+	"github.com/kinecosystem/agora-common/protobuf/validation"
 )
 
 // App is a long lived application that services network requests.
@@ -84,6 +87,8 @@ func Run(app App, options ...Option) error {
 	viper.BindEnv("debug_listen_address", "DEBUG_LISTEN_ADDRESS")
 	viper.BindEnv("log_level", "LOG_LEVEL")
 	viper.BindEnv("log_type", "LOG_TYPE")
+	viper.BindEnv("tls_certificate", "TLS_CERTIFICATE")
+	viper.BindEnv("tls_private_key", "TLS_PRIVATE_KEY")
 
 	logger := logrus.StandardLogger().WithField("type", "agora/app")
 
@@ -144,6 +149,35 @@ func Run(app App, options ...Option) error {
 		}()
 	}
 
+	var transportCreds credentials.TransportCredentials
+
+	if config.TLSCertificate != "" {
+		if config.TLSKey == "" {
+			logger.Error("tls key must be provided if certificate is specified")
+			os.Exit(1)
+		}
+
+		certBytes, err := LoadFile(config.TLSCertificate)
+		if err != nil {
+			logger.WithError(err).Error("failed to load tls certificate")
+			os.Exit(1)
+		}
+
+		keyBytes, err := LoadFile(config.TLSKey)
+		if err != nil {
+			logger.WithError(err).Error("failed to load tls key")
+			os.Exit(1)
+		}
+
+		cert, err := tls.X509KeyPair(certBytes, keyBytes)
+		if err != nil {
+			logger.WithError(err).Error("invalid certificate/private key")
+			os.Exit(1)
+		}
+
+		transportCreds = credentials.NewServerTLSFromCert(&cert)
+	}
+
 	// todo: metrics, interceptors, etc
 
 	if err := app.Init(config.AppConfig); err != nil {
@@ -157,6 +191,7 @@ func Run(app App, options ...Option) error {
 	}
 
 	serv := grpc.NewServer(
+		grpc.Creds(transportCreds),
 		grpc_middleware.WithUnaryServerChain(
 			append([]grpc.UnaryServerInterceptor{grpc_prometheus.UnaryServerInterceptor}, opts.unaryServerInterceptors...)...,
 		),

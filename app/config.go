@@ -17,6 +17,19 @@ type Config struct {
 	ListenAddress       string        `mapstructure:"listen_address"`
 	ShutdownGracePeriod time.Duration `mapstructure:"shutdown_grace_period"`
 
+	// TLSCertificate is an optional URL that specified a TLS certificate to be
+	// used for the gRPC server.
+	//
+	// Currently only two supported URL schemes are supported: file, s3.
+	// If no scheme is specified, file is used.
+	TLSCertificate string `mapstructure:"tls_certificate"`
+	// TLSKey is an optional URL that specifies a TLS Private Key to be used for the
+	// gRPC server.
+	//
+	// Currently only two supported URL schemes are supported: file, s3.
+	// If no scheme is specified, file is used.
+	TLSKey string `mapstructure:"tls_private_key"`
+
 	EnablePprof        bool   `mapstructure:"enable_pprof"`
 	EnableExpvar       bool   `mapstructure:"enable_expvar"`
 	DebugListenAddress string `mapstructure:"debug_listen_address"`
