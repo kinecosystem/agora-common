@@ -18,6 +18,6 @@ func init() {
 		return &LocalLoader{}, nil
 	}
 
-	RegisterFileLoader("", ctr)
-	RegisterFileLoader("file", ctr)
+	RegisterFileLoaderCtor("", ctr)
+	RegisterFileLoaderCtor("file", ctr)
 }

@@ -36,7 +36,11 @@ func (l S3Loader) Load(url *url.URL) ([]byte, error) {
 
 	resp, err := l.s3.GetObjectRequest(&s3.GetObjectInput{
 		Bucket: aws.String(url.Host),
-		Key:    aws.String(url.Path[1:]), // uh you suck
+		// The path component of a URL includes the prefixed '/'.
+		// However, despite S3 allowing URL's in raw APIs, it does _not_ expect
+		// it in many SDKs. It would be nice if they handled it more consistently,
+		// but here we are.
+		Key: aws.String(url.Path[1:]),
 	}).Send(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load %s", url.String())
@@ -70,5 +74,5 @@ func init() {
 		return loader, nil
 	}
 
-	RegisterFileLoader("s3", ctr)
+	RegisterFileLoaderCtor("s3", ctr)
 }

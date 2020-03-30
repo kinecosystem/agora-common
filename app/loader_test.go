@@ -61,7 +61,7 @@ func TestS3Loader(t *testing.T) {
 	}
 
 	_, err = l.Load(getURL(t, "s3://bucket/configs/example"))
-	assert.NotNil(t, err) // todo: not found check
+	assert.NotNil(t, err)
 
 	_, err = client.PutObjectRequest(&s3.PutObjectInput{
 		Body:   bytes.NewReader([]byte("hello")),

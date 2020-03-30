@@ -9,25 +9,25 @@ import (
 )
 
 var (
-	ctrMu sync.Mutex
-	ctrs  = make(map[string]FileLoaderCtr)
+	ctorMu sync.Mutex
+	ctors  = make(map[string]FileLoaderCtor)
 )
 
-// RegisterFileLoader registers a FileLoader for the specified scheme.
-func RegisterFileLoader(scheme string, ctr FileLoaderCtr) {
-	ctrMu.Lock()
-	defer ctrMu.Unlock()
+// RegisterFileLoaderCtor registers a FileLoader for the specified scheme.
+func RegisterFileLoaderCtor(scheme string, ctr FileLoaderCtor) {
+	ctorMu.Lock()
+	defer ctorMu.Unlock()
 
-	_, exists := ctrs[scheme]
+	_, exists := ctors[scheme]
 	if exists {
 		panic(fmt.Sprintf("FileLoader already registered for scheme '%s'", scheme))
 	}
 
-	ctrs[scheme] = ctr
+	ctors[scheme] = ctr
 }
 
-// FileLoaderCtr constructs a FileLoader.
-type FileLoaderCtr func() (FileLoader, error)
+// FileLoaderCtor constructs a FileLoader.
+type FileLoaderCtor func() (FileLoader, error)
 
 // FileLoader loads files at a specified URL.
 type FileLoader interface {
@@ -37,15 +37,15 @@ type FileLoader interface {
 // LoadFile loads a file at the specified URL using the corresponding
 // registered FileLoader. If no scheme is specified, LocalLoader is used.
 func LoadFile(fileURL string) ([]byte, error) {
-	ctrMu.Lock()
-	defer ctrMu.Unlock()
+	ctorMu.Lock()
+	defer ctorMu.Unlock()
 
 	u, err := url.Parse(fileURL)
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid file url %s", fileURL)
 	}
 
-	ctr, exists := ctrs[u.Scheme]
+	ctr, exists := ctors[u.Scheme]
 	if !exists {
 		return nil, errors.Errorf("no file loader for %s", u.Scheme)
 	}
