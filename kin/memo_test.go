@@ -46,7 +46,7 @@ func TestMemo_Valid(t *testing.T) {
 		require.EqualValues(t, empyFK, m.ForeignKey())
 	}
 
-	for i := 0; i < 256; i = i + 29 {
+	for i := 0; i < 256; i += 29 {
 		fk := make([]byte, 29)
 		for j := 0; j < 29; j++ {
 			fk[j] = byte(i + j)  // this eventually overflows, but that's ok
