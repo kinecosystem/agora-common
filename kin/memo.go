@@ -58,7 +58,7 @@ func NewMemo(v byte, t TransactionType, appIndex uint16, foreignKey []byte) (m M
 		// apply last 2-bits of current byte
 		// apply first 6-bits of next byte
 		m[i] = (foreignKey[i-4] >> 6) & 0x3
-		m[i] = (foreignKey[i-3] & 0x3f) << 2
+		m[i] |= (foreignKey[i-3] & 0x3f) << 2
 	}
 
 	return m, nil

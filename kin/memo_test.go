@@ -46,24 +46,24 @@ func TestMemo_Valid(t *testing.T) {
 		require.EqualValues(t, empyFK, m.ForeignKey())
 	}
 
-	fk := make([]byte, 29)
-	for i := byte(0); i < 28; i++ {
-		fk[i] = i
+	for i := 0; i < 256; i = i + 29 {
+		fk := make([]byte, 29)
+		for j := 0; j < 29; j++ {
+			fk[j] = byte(i + j)  // this eventually overflows, but that's ok
+		}
+
+		m, err := NewMemo(1, TransactionTypeEarn, 2, fk)
+		require.NoError(t, err)
+
+		actual := m.ForeignKey()
+		for j := 0; j < 28; j++ {
+			require.Equal(t, fk[j], actual[j])
+		}
+
+		// Note, because we only have 230 bits, the last byte in the memo fk
+		// only has the first 6 bits of the last byte in the original fk.
+		require.Equal(t, fk[28] & 0x3f, actual[28])
 	}
-	fk[28] = 0xff
-
-	m, err := NewMemo(1, TransactionTypeEarn, 2, fk)
-	require.NoError(t, err)
-
-	actual := m.ForeignKey()
-	for i := byte(0); i < 28; i++ {
-		require.Equal(t, fk[i], actual[i])
-	}
-
-	// Note, because we only have 230 bits, the last fk byte
-	// only technically has 6 bits. As a result, if we have 0xff
-	// in the last byte, we should only see 0x3f, which is 0xff >> 2.
-	require.Equal(t, byte(0x3f), actual[28])
 }
 
 func TestMemo_Invalid(t *testing.T) {
