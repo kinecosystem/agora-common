@@ -64,6 +64,14 @@ func TestMemo_Valid(t *testing.T) {
 		// only has the first 6 bits of the last byte in the original fk.
 		require.Equal(t, fk[28] & 0x3f, actual[28])
 	}
+
+	// Test a short memo
+	fk := []byte{byte(1), byte(255)}
+	m, err := NewMemo(1, TransactionTypeEarn, 2, fk)
+	require.NoError(t, err)
+
+	actual := m.ForeignKey()
+	require.Equal(t, fk, actual[:2])
 }
 
 func TestMemo_Invalid(t *testing.T) {
