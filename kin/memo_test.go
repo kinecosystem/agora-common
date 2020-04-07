@@ -65,13 +65,20 @@ func TestMemo_Valid(t *testing.T) {
 		require.Equal(t, fk[28] & 0x3f, actual[28])
 	}
 
-	// Test a short memo
+	// Test a short foreign key
 	fk := []byte{byte(1), byte(255)}
 	m, err := NewMemo(1, TransactionTypeEarn, 2, fk)
 	require.NoError(t, err)
 
 	actual := m.ForeignKey()
 	require.Equal(t, fk, actual[:2])
+
+	// Test no foreign key
+	m, err = NewMemo(1, TransactionTypeEarn, 2, nil)
+	require.NoError(t, err)
+
+	actual = m.ForeignKey()
+	require.Equal(t, make([]byte, 29), actual)
 }
 
 func TestMemo_Invalid(t *testing.T) {

@@ -52,19 +52,22 @@ func NewMemo(v byte, t TransactionType, appIndex uint16, foreignKey []byte) (m M
 	m[2] = byte((appIndex & 0x3fc0) >> 6)
 
 	m[3] = byte((appIndex & 0xc000) >> 14)
-	m[3] |= (foreignKey[0] & 0x3f) << 2
 
-	// apply up to the 32nd byte of the memo (which equals the max FK length of 29 + 3)
-	for i := 4; i < 3+len(foreignKey); i++ {
-		// apply last 2-bits of current byte
-		// apply first 6-bits of next byte
-		m[i] = (foreignKey[i-4] >> 6) & 0x3
-		m[i] |= (foreignKey[i-3] & 0x3f) << 2
-	}
+	if len(foreignKey) > 0 {
+		m[3] |= (foreignKey[0] & 0x3f) << 2
 
-	// if the foreign key is less than 29 bytes, the last 2 bits of the FK can be included in the memo
-	if len(foreignKey) < 29 {
-		m[len(foreignKey)+3] = (foreignKey[len(foreignKey)-1] >> 6) & 0x3
+		// insert the rest of the fk. since each loop references fk[n] and fk[n+1], the upper bound is offset by 3 instead of 4.
+		for i := 4; i < 3+len(foreignKey); i++ {
+			// apply last 2-bits of current byte
+			// apply first 6-bits of next byte
+			m[i] = (foreignKey[i-4] >> 6) & 0x3
+			m[i] |= (foreignKey[i-3] & 0x3f) << 2
+		}
+
+		// if the foreign key is less than 29 bytes, the last 2 bits of the FK can be included in the memo
+		if len(foreignKey) < 29 {
+			m[len(foreignKey)+3] = (foreignKey[len(foreignKey)-1] >> 6) & 0x3
+		}
 	}
 
 	return m, nil
