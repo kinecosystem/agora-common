@@ -15,6 +15,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/golang/protobuf v1.3.2
+	github.com/google/uuid v1.1.1
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0

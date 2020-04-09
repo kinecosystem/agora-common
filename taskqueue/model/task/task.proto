@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package internal.task.v1;
+
+import "validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "task";
+
+// Wrapper is a wrapper for task queue payloads.
+message Wrapper {
+    Message message = 1 [(validate.rules).message.required = true];
+
+    google.protobuf.Timestamp submission_time = 2 [(validate.rules).timestamp.required = true];
+}
+
+// Message is the task message payload.
+message Message {
+    // The canonical protobuf message type name; used for validating the type of the payload.
+    //
+    // For example: internal.task.v1.Message.
+    string type_name = 1 [(validate.rules).string = {
+        min_len: 1
+        max_len: 256
+    }];
+
+    // The protobuf message bytes.
+    //
+    // Note: we allow 0 byte length for messages with only default field values.
+    bytes raw_value = 2 [(validate.rules).bytes = {
+        // The AWS SQS limit. Note that this doesn't account for any overhead from
+        // encoding nor the Wrapper message itself but if the raw message exceeds this
+        // value, we can fail early.
+        max_len: 262144
+    }];
+}
