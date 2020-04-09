@@ -14,7 +14,7 @@ type retrier struct {
 
 // NewRetrier returns a Retrier that will retry actions based off of the
 // provided strategies. If no strategies are provided, the retrier acts
-// as a tight-loop, retry until no error is returned from the action.
+// as a tight-loop, retrying until no error is returned from the action.
 func NewRetrier(strategies ...Strategy) Retrier {
 	return &retrier{
 		strategies: strategies,
