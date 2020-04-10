@@ -12,8 +12,9 @@ import (
 	"github.com/ory/dockertest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"mfycheng.dev/retry"
-	"mfycheng.dev/retry/backoff"
+
+	"github.com/kinecosystem/agora-common/retry"
+	"github.com/kinecosystem/agora-common/retry/backoff"
 )
 
 const (
