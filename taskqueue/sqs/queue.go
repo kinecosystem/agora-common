@@ -11,10 +11,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs/sqsiface"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/kinecosystem/agora-common/taskqueue"
-	"github.com/kinecosystem/agora-common/taskqueue/model/task"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/kinecosystem/agora-common/taskqueue"
+	"github.com/kinecosystem/agora-common/taskqueue/model/task"
 )
 
 const (

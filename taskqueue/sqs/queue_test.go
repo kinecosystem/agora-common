@@ -11,8 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kinecosystem/agora-common/testutil"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/sqsiface"
@@ -26,6 +24,7 @@ import (
 
 	sqstest "github.com/kinecosystem/agora-common/aws/sqs/test"
 	"github.com/kinecosystem/agora-common/taskqueue/model/task"
+	"github.com/kinecosystem/agora-common/testutil"
 )
 
 var (
@@ -372,7 +371,7 @@ func TestTaskQueue_VisibilityTimeoutExtension(t *testing.T) {
 			require.Fail(t, "task chan full")
 		}
 		return nil
-	}, WithVsibilityExtensionEnabled(true))
+	}, WithVisibilityExtensionEnabled(true))
 	require.NoError(t, err)
 	defer p.Shutdown()
 
