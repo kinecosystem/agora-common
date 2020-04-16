@@ -22,7 +22,7 @@ func RegisterClientCtor(clientType string, ctr ClientCtor) {
 
 	_, exists := ctors[clientType]
 	if exists {
-		panic(fmt.Sprintf("ClientCtor already registered for clientType '%s'", clientType))
+		panic(fmt.Sprintf("metrics.ClientCtor already registered for clientType '%s'", clientType))
 	}
 
 	ctors[clientType] = ctr
