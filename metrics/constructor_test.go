@@ -17,6 +17,13 @@ func TestCreateClient(t *testing.T) {
 	client, err = CreateClient("test", config)
 	require.NoError(t, err)
 	require.NotNil(t, client)
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("registration of ClientCtor with previously registered client type did not panic")
+		}
+	}()
+	RegisterClientCtor("test", newClient)
 }
 
 type testClient struct{}
