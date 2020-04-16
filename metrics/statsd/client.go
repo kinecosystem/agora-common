@@ -14,12 +14,12 @@ import (
 const ClientType = "statsd"
 
 const (
-	connAddrEnvVar = "METRICS_CONN_ADDR"
-	bufferEnvVar   = "METRICS_BUFFER"
+	connAddrEnvVar   = "METRICS_CONN_ADDR"
+	bufferEnvVar     = "METRICS_BUFFER"
 	sampleRateEnvVar = "METRICS_SAMPLE_RATE"
 
-	defaultConnStr = "localhost:8125"
-	defaultBuffer  = 128
+	defaultConnStr    = "localhost:8125"
+	defaultBuffer     = 128
 	defaultSampleRate = 1.0
 )
 
@@ -28,8 +28,8 @@ func init() {
 }
 
 type Client struct {
-	client *statsd.Client
-	config *metrics.ClientConfig
+	client     *statsd.Client
+	config     *metrics.ClientConfig
 	sampleRate float64
 }
 
@@ -80,8 +80,8 @@ func newClient(config *metrics.ClientConfig) (metrics.Client, error) {
 	client.Tags = config.GlobalTags
 
 	return &Client{
-		client: client,
-		config: config,
+		client:     client,
+		config:     config,
 		sampleRate: sampleRate,
 	}, nil
 }
