@@ -2,7 +2,6 @@ package memory
 
 import (
 	"fmt"
-	"math/rand"
 	"sync"
 
 	"github.com/kinecosystem/agora-common/metrics"
@@ -41,17 +40,15 @@ func newClient(config *metrics.ClientConfig) (metrics.Client, error) {
 
 // Count implements metrics.Client.Count
 func (c *Client) Count(name string, value int64, tags []string) error {
-	if rand.Float64() <= c.config.SampleRate {
-		c.Lock()
-		defer c.Unlock()
+	c.Lock()
+	defer c.Unlock()
 
-		tags = append(tags, c.config.GlobalTags...)
-		c.countRecords = append(c.countRecords, CountRecord{
-			Name:  fmt.Sprintf(metricFormat, c.config.Namespace, name),
-			Value: value,
-			Tags:  tags,
-		})
-	}
+	tags = append(tags, c.config.GlobalTags...)
+	c.countRecords = append(c.countRecords, CountRecord{
+		Name:  fmt.Sprintf(metricFormat, c.config.Namespace, name),
+		Value: value,
+		Tags:  tags,
+	})
 	return nil
 }
 

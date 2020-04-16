@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/kinecosystem/agora-common/metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kinecosystem/agora-common/metrics"
 )
 
 func TestCount(t *testing.T) {
 	config := &metrics.ClientConfig{
 		Namespace:  "test",
-		SampleRate: 1.0,
 		GlobalTags: []string{"testtag"},
 	}
 
