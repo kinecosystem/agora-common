@@ -8,15 +8,15 @@ type Meter struct {
 }
 
 // NewMeter returns a new meter
-func NewMeter(client Client, name string, tags []string) (*Meter, error) {
-	if err := isValidMetricName(name); err != nil {
+func NewMeter(client Client, name string, tagOptions ...TagOption) (*Meter, error) {
+	if err := validateMetricName(name); err != nil {
 		return nil, err
 	}
 
 	return &Meter{
 		client: client,
 		name:   name,
-		tags:   tags,
+		tags:   GetTags(tagOptions...),
 	}, nil
 }
 

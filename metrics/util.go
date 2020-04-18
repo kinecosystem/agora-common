@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func isValidMetricName(name string) error {
+func validateMetricName(name string) error {
 	if len(name) == 0 {
 		return errors.New("name cannot be empty")
 	}

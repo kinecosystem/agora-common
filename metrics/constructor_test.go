@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -33,6 +34,14 @@ func newClient(config *ClientConfig) (Client, error) {
 }
 
 func (t testClient) Count(name string, value int64, tags []string) error {
+	return nil
+}
+
+func (t testClient) Gauge(name string, value float64, tags []string) error {
+	return nil
+}
+
+func (t testClient) Timing(name string, value time.Duration, tags []string) error {
 	return nil
 }
 

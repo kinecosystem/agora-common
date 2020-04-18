@@ -3,6 +3,7 @@ package statsd
 import (
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/pkg/errors"
@@ -89,6 +90,17 @@ func newClient(config *metrics.ClientConfig) (metrics.Client, error) {
 // Count implements metrics.Client.Count
 func (c *Client) Count(name string, value int64, tags []string) error {
 	return c.client.Count(name, value, tags, c.sampleRate)
+}
+
+// Gauge implements metrics.Client.Gauge
+func (c *Client) Gauge(name string, value float64, tags []string) error {
+	return c.client.Gauge(name, value, tags, c.sampleRate)
+}
+
+// Timing implements metrics.Client.Timing
+func (c *Client) Timing(name string, value time.Duration, tags []string) error {
+	// By default .XXth_percentile is added as a suffix to the name for us
+	return c.client.Timing(name, value, tags, c.sampleRate)
 }
 
 func (c *Client) Close() error {
