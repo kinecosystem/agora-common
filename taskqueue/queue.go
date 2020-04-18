@@ -17,7 +17,7 @@ import (
 //
 // Note that the task queue Processor is not expected to perform error logging, should the
 // Handler encounter an error.
-type Handler func(ctx context.Context, taskMsg* task.Message) error
+type Handler func(ctx context.Context, taskMsg *task.Message) error
 
 // ProcessorCtor creates a new Processor configured with the provided Handler.
 type ProcessorCtor func(handler Handler) (Processor, error)

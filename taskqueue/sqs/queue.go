@@ -180,12 +180,9 @@ func (q *queue) taskWorker(id int) {
 			if err := q.processTask(receiptHandle, q.conf.VisibilityTimeout, wrapper.Message); err != nil {
 				// handler is expected to do logging
 				// todo(metrics): meter failed processing
-			} else {
-				if err := q.deleteMessage(receiptHandle); err != nil {
-					log.WithError(err).Warn("failed to delete completed message from queue")
-				}
-
-				// todo(metrics): add metrics for success + timing
+			} else if err := q.deleteMessage(receiptHandle); err != nil {
+				log.WithError(err).Warn("failed to delete completed message from queue")
+				// todo(metrics): add metrics for success + timing (regardless of fail)
 			}
 		}
 	}

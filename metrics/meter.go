@@ -22,15 +22,15 @@ func NewMeter(client Client, name string, tags []string) (*Meter, error) {
 
 // Count adds the provided value to the metric's count
 func (m *Meter) Count(value int64) {
-	m.client.Count(m.name, value, m.tags)
+	_ = m.client.Count(m.name, value, m.tags)
 }
 
 // Incr adds 1 to the metric's count
 func (m *Meter) Incr() {
-	m.client.Count(m.name, 1, m.tags)
+	_ = m.client.Count(m.name, 1, m.tags)
 }
 
 // Decr subtracts 1 from the metric's count
 func (m *Meter) Decr() {
-	m.client.Count(m.name, -1, m.tags)
+	_ = m.client.Count(m.name, -1, m.tags)
 }

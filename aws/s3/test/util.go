@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	repository    = "adobe/s3mock"
-	tag = "latest"
+	repository = "adobe/s3mock"
+	tag        = "latest"
 )
 
 // StartS3 starts a mock S3 dockerized server

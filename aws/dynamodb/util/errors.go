@@ -9,10 +9,7 @@ import (
 // the that the conditional expression failed.
 func IsConditionalCheckFailed(err error) bool {
 	if aErr, ok := err.(awserr.Error); ok {
-		switch aErr.Code() {
-		case dynamodb.ErrCodeConditionalCheckFailedException:
-			return true
-		}
+		return aErr.Code() == dynamodb.ErrCodeConditionalCheckFailedException
 	}
 
 	return false

@@ -1,8 +1,9 @@
 package testutil
 
 import (
-	"errors"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 // WaitFor waits for a condition to be met before the specified timeout
@@ -12,14 +13,13 @@ func WaitFor(timeout, interval time.Duration, condition func() bool) error {
 	}
 	start := time.Now()
 	for {
-		select {
-		case <-time.After(interval):
-			if time.Since(start) >= timeout {
-				return errors.New("condition was not met in time")
-			}
-			if condition() {
-				return nil
-			}
+		if condition() {
+			return nil
 		}
+		if time.Since(start) >= timeout {
+			return errors.Errorf("condition not met withind %v", timeout)
+		}
+
+		time.Sleep(interval)
 	}
 }

@@ -49,7 +49,7 @@ func TestMemo_Valid(t *testing.T) {
 	for i := 0; i < 256; i += 29 {
 		fk := make([]byte, 29)
 		for j := 0; j < 29; j++ {
-			fk[j] = byte(i + j)  // this eventually overflows, but that's ok
+			fk[j] = byte(i + j) // this eventually overflows, but that's ok
 		}
 
 		m, err := NewMemo(1, TransactionTypeEarn, 2, fk)
@@ -62,7 +62,7 @@ func TestMemo_Valid(t *testing.T) {
 
 		// Note, because we only have 230 bits, the last byte in the memo fk
 		// only has the first 6 bits of the last byte in the original fk.
-		require.Equal(t, fk[28] & 0x3f, actual[28])
+		require.Equal(t, fk[28]&0x3f, actual[28])
 	}
 
 	// Test a short foreign key

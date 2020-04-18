@@ -9,5 +9,6 @@ build:
 	@./go-build.sh
 
 .PHONY: test
+test: build
 test:
 	@./go-test.sh

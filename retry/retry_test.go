@@ -14,10 +14,13 @@ func TestRealSleeper(t *testing.T) {
 	sleeperImpl = &realSleeper{}
 
 	start := time.Now()
-	Retry(func() error { return errors.New("err") },
+	n, err := Retry(func() error { return errors.New("err") },
 		Limit(2),
-		Backoff(backoff.Constant(500*time.Millisecond), 500*time.Millisecond))
+		Backoff(backoff.Constant(500*time.Millisecond), 500*time.Millisecond),
+	)
 
+	assert.NotNil(t, err)
+	assert.EqualValues(t, 2, n)
 	assert.True(t, 500*time.Millisecond <= time.Since(start))
 	assert.True(t, 1*time.Second > time.Since(start))
 }

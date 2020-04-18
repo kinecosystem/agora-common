@@ -4,13 +4,13 @@ import (
 	"time"
 )
 
-// AppConfig is the application specific configuration.
+// Config is the application specific configuration.
 // It is passed to the App.Init function, and is optional.
-type AppConfig map[string]interface{}
+type Config map[string]interface{}
 
-// Config contains the base configuration for agora services, as well as the
+// BaseConfig contains the base configuration for agora services, as well as the
 // application itself.
-type Config struct {
+type BaseConfig struct {
 	LogLevel string `mapstructure:"log_level"`
 	LogType  string `mapstructure:"log_type"`
 
@@ -37,10 +37,10 @@ type Config struct {
 	// Arbitrary configuration that the service can define / implement.
 	//
 	// Users should use mapstructure.Decode for ServiceConfig.
-	AppConfig AppConfig `mapstructure:"app"`
+	AppConfig Config `mapstructure:"app"`
 }
 
-var defaultConfig = Config{
+var defaultConfig = BaseConfig{
 	LogType: "json",
 
 	ListenAddress:       ":8085",

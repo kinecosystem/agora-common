@@ -37,7 +37,7 @@ type App interface {
 	// Init initializes the application in a blocking fashion. When Init returns, it
 	// is expected that the application is ready to start receiving requests (provided
 	// there are gRPC handlers installed).
-	Init(config AppConfig) error
+	Init(config Config) error
 
 	// RegisterWithGRPC provides a mechanism for the application to register gRPC services
 	// with the gRPC server.
@@ -58,8 +58,6 @@ type App interface {
 
 var (
 	configPath = flag.String("config", "config.yaml", "configuration file path")
-
-	loadedConfig *Config
 
 	osSigCh = make(chan os.Signal, 1)
 )
@@ -83,12 +81,12 @@ func Run(app App, options ...Option) error {
 		o(&opts)
 	}
 
-	viper.BindEnv("listen_address", "LISTEN_ADDRESS")
-	viper.BindEnv("debug_listen_address", "DEBUG_LISTEN_ADDRESS")
-	viper.BindEnv("log_level", "LOG_LEVEL")
-	viper.BindEnv("log_type", "LOG_TYPE")
-	viper.BindEnv("tls_certificate", "TLS_CERTIFICATE")
-	viper.BindEnv("tls_private_key", "TLS_PRIVATE_KEY")
+	_ = viper.BindEnv("listen_address", "LISTEN_ADDRESS")
+	_ = viper.BindEnv("debug_listen_address", "DEBUG_LISTEN_ADDRESS")
+	_ = viper.BindEnv("log_level", "LOG_LEVEL")
+	_ = viper.BindEnv("log_type", "LOG_TYPE")
+	_ = viper.BindEnv("tls_certificate", "TLS_CERTIFICATE")
+	_ = viper.BindEnv("tls_private_key", "TLS_PRIVATE_KEY")
 
 	logger := logrus.StandardLogger().WithField("type", "agora/app")
 
@@ -115,8 +113,6 @@ func Run(app App, options ...Option) error {
 		logger.WithError(err).Error("failed to unmarshal config")
 		os.Exit(1)
 	}
-
-	loadedConfig = &config
 
 	configureLogger(config)
 
@@ -250,7 +246,7 @@ func Run(app App, options ...Option) error {
 	}
 }
 
-func configureLogger(config Config) {
+func configureLogger(config BaseConfig) {
 	switch strings.ToLower(config.LogType) {
 	case "human":
 		// The default formatter for logrus is 'human' readable.

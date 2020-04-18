@@ -63,13 +63,6 @@ func (c *Client) getCountRecords() []CountRecord {
 	return records
 }
 
-// reset resets the client ack to its original state
-func (c *Client) reset() {
-	c.Lock()
-	c.countRecords = make([]CountRecord, 0)
-	c.Unlock()
-}
-
 // Close implements metrics.Client.Close
 func (c *Client) Close() error {
 	return nil
