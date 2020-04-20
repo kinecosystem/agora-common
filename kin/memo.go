@@ -30,7 +30,7 @@ const HighestVersion = 1
 const MaxTransactionType = TransactionTypeP2P
 
 // Memo is the 32 byte memo encoded into transactions, as defined
-// in github.com/kinecosystem/kin-api.
+// in github.com/kinecosystem/kin-api-internal.
 type Memo [32]byte
 
 // NewMemo creates a new Memo with the specified parameters.

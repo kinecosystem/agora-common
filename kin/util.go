@@ -1,7 +1,7 @@
 package kin
 
 import (
-	commonpb "github.com/kinecosystem/kin-api/genproto/common/v3"
+	commonpb "github.com/kinecosystem/kin-api-internal/genproto/common/v3"
 )
 
 // GetAgoraDataTransactionType returns the appropriate AgoraData_TransactionType based on the transaction type in
