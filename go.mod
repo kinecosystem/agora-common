@@ -15,6 +15,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/go-errors/errors v1.0.1 // indirect
+	github.com/goburrow/cache v0.1.0
 	github.com/golang/protobuf v1.3.2
 	github.com/google/uuid v1.1.1
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
