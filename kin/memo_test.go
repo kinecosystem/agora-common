@@ -11,7 +11,7 @@ import (
 )
 
 func TestMemo_Valid(t *testing.T) {
-	var empyFK = make([]byte, 29)
+	var emptyFK = make([]byte, 29)
 
 	for v := byte(0); v <= 7; v++ {
 		m, err := NewMemo(v, TransactionTypeEarn, 1, make([]byte, 29))
@@ -21,7 +21,7 @@ func TestMemo_Valid(t *testing.T) {
 		require.EqualValues(t, v, m.Version())
 		require.EqualValues(t, TransactionTypeEarn, m.TransactionType())
 		require.EqualValues(t, 1, m.AppIndex())
-		require.EqualValues(t, empyFK, m.ForeignKey())
+		require.EqualValues(t, emptyFK, m.ForeignKey())
 	}
 
 	for txType := TransactionTypeUnknown; txType <= MaxTransactionType; txType++ {
@@ -32,7 +32,7 @@ func TestMemo_Valid(t *testing.T) {
 		require.EqualValues(t, 1, m.Version())
 		require.EqualValues(t, txType, m.TransactionType())
 		require.EqualValues(t, 1, m.AppIndex())
-		require.EqualValues(t, empyFK, m.ForeignKey())
+		require.EqualValues(t, emptyFK, m.ForeignKey())
 	}
 
 	for i := uint16(0); i < math.MaxUint16; i++ {
@@ -43,7 +43,7 @@ func TestMemo_Valid(t *testing.T) {
 		require.EqualValues(t, 1, m.Version())
 		require.EqualValues(t, TransactionTypeEarn, m.TransactionType())
 		require.EqualValues(t, i, m.AppIndex())
-		require.EqualValues(t, empyFK, m.ForeignKey())
+		require.EqualValues(t, emptyFK, m.ForeignKey())
 	}
 
 	for i := 0; i < 256; i += 29 {
