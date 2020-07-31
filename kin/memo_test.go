@@ -81,6 +81,14 @@ func TestMemo_Valid(t *testing.T) {
 	require.Equal(t, make([]byte, 29), actual)
 }
 
+func TestMemo_TransactionTypeRaw(t *testing.T) {
+	for i := 0; i < 32; i++ {
+		m, err := NewMemo(1, TransactionType(i), 0, nil)
+		require.NoError(t, err)
+		require.Equal(t, m.TransactionTypeRaw(), TransactionType(i))
+	}
+}
+
 func TestMemo_Invalid(t *testing.T) {
 	_, err := NewMemo(8, TransactionTypeEarn, 1, make([]byte, 29))
 	require.NotNil(t, err)

@@ -46,7 +46,7 @@ func NewMemo(v byte, t TransactionType, appIndex uint16, foreignKey []byte) (m M
 	m[0] |= v << 2
 	m[0] |= (byte(t) & 0x7) << 5
 
-	m[1] = (byte(t) & 0x1c) >> 2
+	m[1] = (byte(t) & 0x18) >> 3
 	m[1] |= byte(appIndex&0x3f) << 2
 
 	m[2] = byte((appIndex & 0x3fc0) >> 6)
