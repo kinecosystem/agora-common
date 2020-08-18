@@ -199,6 +199,7 @@ func Run(app App, options ...Option) error {
 
 	app.RegisterWithGRPC(serv)
 	grpc_prometheus.Register(serv)
+	grpc_prometheus.EnableHandlingTimeHistogram()
 	debugHTTPMux.Handle("/metrics", promhttp.Handler())
 
 	healthgrpc.RegisterHealthServer(serv, health.NewServer())
