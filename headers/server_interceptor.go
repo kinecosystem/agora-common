@@ -75,11 +75,9 @@ func getAllHeaders(ctx context.Context, log *logrus.Entry) context.Context {
 				// Note root and propagating headers can only be binary. Only the default header has a chance to be an ascii header
 				if strings.HasSuffix(key, "-bin") {
 					incomingHeader[key] = []byte(md[key][0])
-
 				} else {
 					asciiHeader[key] = md[key][0]
 				}
-
 			}
 		}
 	}
