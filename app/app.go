@@ -16,6 +16,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -246,6 +247,54 @@ func Run(app App, options ...Option) error {
 	}
 }
 
+type prometheusLogger struct {
+	warnCounter  prometheus.Counter
+	errorCounter prometheus.Counter
+}
+
+func newPrometheusLogger() *prometheusLogger {
+	l := &prometheusLogger{}
+	l.warnCounter = prometheus.NewCounter(prometheus.CounterOpts{
+		Name:      "logging_warns",
+		Namespace: "agora",
+	})
+	if err := prometheus.Register(l.warnCounter); err != nil {
+		if e, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			l.warnCounter = e.ExistingCollector.(prometheus.Counter)
+		}
+	}
+
+	l.errorCounter = prometheus.NewCounter(prometheus.CounterOpts{
+		Name:      "logging_errors",
+		Namespace: "agora",
+	})
+	if err := prometheus.Register(l.errorCounter); err != nil {
+		if e, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			l.errorCounter = e.ExistingCollector.(prometheus.Counter)
+		}
+	}
+
+	return l
+}
+
+func (p *prometheusLogger) Levels() []logrus.Level {
+	return []logrus.Level{
+		logrus.WarnLevel,
+		logrus.ErrorLevel,
+	}
+}
+
+func (p *prometheusLogger) Fire(e *logrus.Entry) error {
+	switch e.Level {
+	case logrus.WarnLevel:
+		p.warnCounter.Inc()
+	case logrus.ErrorLevel:
+		p.errorCounter.Inc()
+	}
+
+	return nil
+}
+
 func configureLogger(config BaseConfig) {
 	switch strings.ToLower(config.LogType) {
 	case "human":
@@ -265,4 +314,5 @@ func configureLogger(config BaseConfig) {
 	}
 
 	logrus.SetOutput(os.Stdout)
+	logrus.StandardLogger().Hooks.Add(newPrometheusLogger())
 }
