@@ -24,7 +24,7 @@ func TestMemo_Valid(t *testing.T) {
 		require.EqualValues(t, emptyFK, m.ForeignKey())
 	}
 
-	for txType := TransactionTypeUnknown; txType <= MaxTransactionType; txType++ {
+	for txType := TransactionTypeNone; txType <= MaxTransactionType; txType++ {
 		m, err := NewMemo(1, txType, 1, make([]byte, 29))
 		require.NoError(t, err)
 
@@ -90,10 +90,8 @@ func TestMemo_TransactionTypeRaw(t *testing.T) {
 }
 
 func TestMemo_Invalid(t *testing.T) {
+	// Invalid version
 	_, err := NewMemo(8, TransactionTypeEarn, 1, make([]byte, 29))
-	require.NotNil(t, err)
-
-	_, err = NewMemo(8, TransactionTypeP2P+1, 1, make([]byte, 29))
 	require.NotNil(t, err)
 
 	m, err := NewMemo(1, TransactionTypeEarn, 1, make([]byte, 29))
@@ -108,9 +106,7 @@ func TestMemo_Invalid(t *testing.T) {
 
 	// Invalid transaction type
 	m, err = NewMemo(1, TransactionTypeUnknown, 1, make([]byte, 29))
-	require.Nil(t, err)
-	require.False(t, IsValidMemo(m))
-	require.False(t, IsValidMemoStrict(m))
+	require.NotNil(t, err)
 
 	// Version higher than configured
 	m, err = NewMemo(7, TransactionTypeEarn, 1, make([]byte, 29))

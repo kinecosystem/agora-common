@@ -12,10 +12,11 @@ import (
 const magicByte = 0x1
 
 // TransactionType is the memo transaction type.
-type TransactionType uint16
+type TransactionType int16
 
 const (
-	TransactionTypeUnknown TransactionType = iota
+	TransactionTypeUnknown TransactionType = iota - 1
+	TransactionTypeNone
 	TransactionTypeEarn
 	TransactionTypeSpend
 	TransactionTypeP2P
@@ -40,6 +41,10 @@ func NewMemo(v byte, t TransactionType, appIndex uint16, foreignKey []byte) (m M
 	}
 	if v > 7 {
 		return m, errors.Errorf("invalid version")
+	}
+
+	if t < 0 || t > 31 {
+		return m, errors.Errorf("invalid transaction type")
 	}
 
 	m[0] = magicByte
