@@ -37,6 +37,7 @@ require (
 	github.com/stellar/go v0.0.0-20191211203732-552e507ffa37
 	github.com/stellar/go-xdr v0.0.0-20200331223602-71a1e6d555f2 // indirect
 	github.com/stretchr/testify v1.5.1
+	github.com/ybbus/jsonrpc v2.1.2+incompatible
 	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914 // indirect
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11 // indirect
 	google.golang.org/grpc v1.25.1

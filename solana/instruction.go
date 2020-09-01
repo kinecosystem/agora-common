@@ -40,6 +40,10 @@ func NewReadonlyAccountMeta(pub ed25519.PublicKey, isSigner bool) AccountMeta {
 	}
 }
 
+// SortableAccountMeta is a sortable []AccountMeta based on the solana transaction
+// account sorting rules.
+//
+// Reference: https://docs.solana.com/transaction#account-addresses-format
 type SortableAccountMeta []AccountMeta
 
 // Len is the number of elements in the collection.
@@ -88,6 +92,7 @@ func NewInstruction(program, data ed25519.PublicKey, accounts ...AccountMeta) In
 	}
 }
 
+// CompiledInstruction represents an instruction that has been compiled into a transaction.
 type CompiledInstruction struct {
 	ProgramIndex byte
 	Accounts     []byte

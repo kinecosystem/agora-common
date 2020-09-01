@@ -3,6 +3,7 @@ package solana
 import (
 	"bytes"
 	"crypto/ed25519"
+	"crypto/sha256"
 	"fmt"
 	"sort"
 	"strings"
@@ -11,8 +12,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Signature [64]byte
-type Hash [32]byte
+type Signature [ed25519.SignatureSize]byte
+type BlockHash [sha256.Size]byte
 
 type Header struct {
 	NumSignatures     byte
@@ -23,7 +24,7 @@ type Header struct {
 type Message struct {
 	Header          Header
 	Accounts        []ed25519.PublicKey
-	RecentBlockHash Hash
+	RecentBlockHash BlockHash
 	Instructions    []CompiledInstruction
 }
 
@@ -132,7 +133,7 @@ func (t *Transaction) String() string {
 	return sb.String()
 }
 
-func (t *Transaction) SetBlockHash(bh Hash) {
+func (t *Transaction) SetBlockHash(bh BlockHash) {
 	t.Message.RecentBlockHash = bh
 }
 

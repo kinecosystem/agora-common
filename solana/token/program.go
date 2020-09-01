@@ -54,7 +54,7 @@ const (
 
 const (
 	// nolint:varcheck,deadcode,unused
-	ErrorNotRentExempt int = iota
+	ErrorNotRentExempt solana.CustomError = iota
 	// nolint:varcheck,deadcode,unused
 	ErrorInsufficientFunds
 	// nolint:varcheck,deadcode,unused
