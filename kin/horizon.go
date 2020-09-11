@@ -13,7 +13,13 @@ import (
 )
 
 const (
+	// KinAssetCode is the asset code for Kin 2
 	KinAssetCode = "KIN"
+
+	// kin2ProdIssuer is the Kin 2 issuer address on the production Kin 2 network
+	Kin2ProdIssuer = "GDF42M3IPERQCBLWFEZKQRK77JQ65SCKTU3CW36HZVCX7XX5A5QXZIVK"
+	// kin2TestIssuer is the Kin 2 issuer address on the test Kin 2 network
+	Kin2TestIssuer = "GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7"
 
 	// prodHorizonURL is the URL of the production Kin Horizon server
 	prodHorizonURL = "https://horizon.kinfederation.com"
@@ -34,11 +40,6 @@ const (
 	kin2ProdPassphrase = "Public Global Kin Ecosystem Network ; June 2018"
 	// kin2TestPassphrase is the passphrase for the test Kin 2 network
 	kin2TestPassphrase = "Kin Playground Network ; June 2018"
-
-	// kin2ProdIssuer is the Kin 2 issuer address on the production Kin 2 network
-	kin2ProdIssuer = "GDF42M3IPERQCBLWFEZKQRK77JQ65SCKTU3CW36HZVCX7XX5A5QXZIVK"
-	// kin2TestIssuer is the Kin 2 issuer address on the test Kin 2 network
-	kin2TestIssuer = "GBC3SG6NGTSZ2OMH3FFGB7UVRQWILW367U4GSOOF4TFSZONV42UJXUH7"
 )
 
 var (
@@ -97,7 +98,7 @@ var (
 	// prodNetwork is the Network modifier that should be used in transactions on the production Kin network
 	prodNetwork = build.Network{Passphrase: prodHorizonPassphrase}
 	// testNetwork is the Network modifier that should be used in transactions on the test Kin network
-	testNetwork     = build.Network{Passphrase: testHorizonPassphrase}
+	testNetwork = build.Network{Passphrase: testHorizonPassphrase}
 	// kin2ProdNetwork is the Network modifier that should be used in transactions on the production Kin 2 network
 	kin2ProdNetwork = build.Network{Passphrase: kin2ProdPassphrase}
 	// kin2TestNetwork is the Network modifier that should be used in transactions on the test Kin 2 network
@@ -247,8 +248,8 @@ func GetKin2Issuer() (issuer string, err error) {
 
 	switch env {
 	case agoraenv.AgoraEnvironmentProd:
-		return kin2ProdIssuer, nil
+		return Kin2ProdIssuer, nil
 	default:
-		return kin2TestIssuer, nil
+		return Kin2TestIssuer, nil
 	}
 }
