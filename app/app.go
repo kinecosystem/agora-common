@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/health"
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
 
+	"github.com/kinecosystem/agora-common/headers"
 	"github.com/kinecosystem/agora-common/protobuf/validation"
 )
 
@@ -73,9 +74,11 @@ func Run(app App, options ...Option) error {
 	opts := opts{
 		unaryServerInterceptors: []grpc.UnaryServerInterceptor{
 			validation.UnaryServerInterceptor(),
+			headers.UnaryServerInterceptor(),
 		},
 		streamServerInterceptors: []grpc.StreamServerInterceptor{
 			validation.StreamServerInterceptor(),
+			headers.StreamServerInterceptor(),
 		},
 	}
 	for _, o := range options {

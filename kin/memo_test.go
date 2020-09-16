@@ -117,7 +117,7 @@ func TestMemo_Invalid(t *testing.T) {
 	require.False(t, IsValidMemoStrict(m))
 
 	// Invalid transaction type
-	m, err = NewMemo(1, TransactionTypeUnknown, 1, make([]byte, 29))
+	_, err = NewMemo(1, TransactionTypeUnknown, 1, make([]byte, 29))
 	require.NotNil(t, err)
 
 	m, err = NewMemo(1, TransactionTypeP2P+1, 1, make([]byte, 29))
