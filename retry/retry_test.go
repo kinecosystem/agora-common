@@ -43,3 +43,31 @@ func TestRetrier(t *testing.T) {
 	assert.EqualError(t, retriableErr, err.Error())
 	assert.Equal(t, uint(5), attempts)
 }
+
+func TestLoop(t *testing.T) {
+	ts := &testSleeper{}
+	sleeperImpl = ts
+
+	var errNonRetriable = errors.New("non retriable")
+
+	var i int
+	err := Loop(
+		func() error {
+			defer func() { i++ }()
+
+			if i > 10 {
+				return errNonRetriable
+			}
+
+			if i%4 == 0 {
+				return nil
+			}
+
+			return errors.New("blah")
+		},
+		NonRetriableErrors(errNonRetriable),
+		Backoff(backoff.Linear(1), time.Second),
+	)
+	assert.Error(t, err, errNonRetriable)
+	assert.Equal(t, []time.Duration{1, 2, 3, 1, 2, 3, 1, 2}, ts.sleepTimes)
+}

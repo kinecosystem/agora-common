@@ -24,7 +24,11 @@ func Constant(interval time.Duration) Strategy {
 // Ex. Linear(2*time.Seconds) = 2s, 4s, 6s, 8s, ...
 func Linear(baseDelay time.Duration) Strategy {
 	return func(attempts uint) time.Duration {
-		return baseDelay * time.Duration(attempts)
+		if delay := baseDelay * time.Duration(attempts); delay >= 0 {
+			return delay
+		}
+
+		return math.MaxInt64
 	}
 }
 
@@ -35,7 +39,11 @@ func Linear(baseDelay time.Duration) Strategy {
 // Ex. Exponential(2*time.Seconds, 3) = 2s, 6s, 18s, 54s, ...
 func Exponential(baseDelay time.Duration, base float64) Strategy {
 	return func(attempts uint) time.Duration {
-		return baseDelay * time.Duration(math.Pow(base, float64(attempts-1)))
+		if delay := baseDelay * time.Duration(math.Pow(base, float64(attempts-1))); delay >= 0 {
+			return delay
+		}
+
+		return math.MaxInt64
 	}
 }
 

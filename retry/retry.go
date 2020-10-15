@@ -38,9 +38,30 @@ func Retry(action Action, strategies ...Strategy) (uint, error) {
 			return i, nil
 		}
 
-		for _, p := range strategies {
-			if shouldRetry := p(i, err); !shouldRetry {
+		for _, s := range strategies {
+			if shouldRetry := s(i, err); !shouldRetry {
 				return i, err
+			}
+		}
+	}
+}
+
+// Loop executes the provided action infinitely, until one of the provided
+// strategies indicates it should not be retried.
+//
+// Unlike Retry, when the action returns with no error, the internal attempt counter
+// is reset, and the action is retried.
+func Loop(action Action, strategies ...Strategy) error {
+	for i := uint(1); ; i++ {
+		err := action()
+		if err == nil {
+			i = 0
+			continue
+		}
+
+		for _, s := range strategies {
+			if shouldRetry := s(i, err); !shouldRetry {
+				return err
 			}
 		}
 	}
