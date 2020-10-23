@@ -9,7 +9,7 @@ import (
 	"github.com/ybbus/jsonrpc"
 )
 
-// TransactionErrorKey is the string keys returned in a transaction error.
+// TransactionErrorKey is the string key returned in a transaction error.
 //
 // Source: https://github.com/solana-labs/solana/blob/master/sdk/src/transaction.rs#L22
 type TransactionErrorKey string
@@ -98,7 +98,7 @@ func parseInstructionError(v interface{}) (e InstructionError, err error) {
 	}
 
 	if len(values) != 2 {
-		return e, errors.Errorf("too many entries in InsructionError tuple: %d", len(values))
+		return e, errors.Errorf("too many entries in InstructionError tuple: %d", len(values))
 	}
 
 	e.Index, err = parseJSONNumber(values[0])
@@ -155,7 +155,7 @@ func (i InstructionError) ErrorKey() InstructionErrorKey {
 
 func (i InstructionError) JSONString() string {
 	if e, ok := i.Err.(CustomError); ok {
-		return fmt.Sprintf(`[%d, {"%s": %d}]`, i.Index, InstructionErrorCustom, (e))
+		return fmt.Sprintf(`[%d, {"%s": %d}]`, i.Index, InstructionErrorCustom, e)
 	}
 
 	return fmt.Sprintf(`[%d, "%s"]`, i.Index, i.Err.Error())
