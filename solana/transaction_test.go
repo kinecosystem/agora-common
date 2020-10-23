@@ -81,7 +81,7 @@ func TestTransaction_EmptyAccount(t *testing.T) {
 	assert.NoError(t, rtt.Unmarshal(tx.Marshal()))
 }
 
-func TestTransaction_MissingBlockHash(t *testing.T) {
+func TestTransaction_MissingBlockhash(t *testing.T) {
 	program, _, err := ed25519.GenerateKey(nil)
 	require.NoError(t, err)
 	pub, priv, err := ed25519.GenerateKey(nil)

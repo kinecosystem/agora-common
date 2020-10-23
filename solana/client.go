@@ -85,7 +85,7 @@ type ConfirmedTransaction struct {
 type Client interface {
 	GetMinimumBalanceForRentExemption(size uint64) (lamports uint64, err error)
 	GetSlot() (uint64, error)
-	GetRecentBlockHash() (BlockHash, error)
+	GetRecentBlockhash() (Blockhash, error)
 	GetConfirmedBlock(slot uint64) (*Block, error)
 	GetConfirmedBlocksWithLimit(start, limit uint64) ([]uint64, error)
 	GetConfirmedTransaction(Signature) (ConfirmedTransaction, error)
@@ -170,7 +170,7 @@ func (c *client) GetSlot() (slot uint64, err error) {
 	return slot, nil
 }
 
-func (c *client) GetRecentBlockHash() (hash BlockHash, err error) {
+func (c *client) GetRecentBlockhash() (hash Blockhash, err error) {
 	type response struct {
 		Value struct {
 			Blockhash string `json:"blockhash"`
@@ -194,7 +194,7 @@ func (c *client) GetRecentBlockHash() (hash BlockHash, err error) {
 func (c *client) GetConfirmedBlock(slot uint64) (block *Block, err error) {
 	type rawBlock struct {
 		Hash       string `json:"blockhash"` // Since this value is in base58, we can't []byte
-		PrevHash   string `json:"previousBlockHash"`
+		PrevHash   string `json:"previousBlockhash"`
 		ParentSlot uint64 `json:"parentSlot"`
 
 		RawTransactions []struct {

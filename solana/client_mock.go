@@ -38,12 +38,12 @@ func (m *MockClient) GetSlot() (uint64, error) {
 	return args.Get(0).(uint64), args.Error(1)
 }
 
-func (m *MockClient) GetRecentBlockHash() (BlockHash, error) {
+func (m *MockClient) GetRecentBlockhash() (Blockhash, error) {
 	m.Lock()
 	defer m.Unlock()
 
 	args := m.Called()
-	return args.Get(0).(BlockHash), args.Error(1)
+	return args.Get(0).(Blockhash), args.Error(1)
 }
 
 func (m *MockClient) GetConfirmedBlock(slot uint64) (*Block, error) {

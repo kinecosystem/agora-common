@@ -13,7 +13,7 @@ import (
 )
 
 type Signature [ed25519.SignatureSize]byte
-type BlockHash [sha256.Size]byte
+type Blockhash [sha256.Size]byte
 
 type Header struct {
 	NumSignatures     byte
@@ -24,7 +24,7 @@ type Header struct {
 type Message struct {
 	Header          Header
 	Accounts        []ed25519.PublicKey
-	RecentBlockHash BlockHash
+	RecentBlockhash Blockhash
 	Instructions    []CompiledInstruction
 }
 
@@ -133,8 +133,8 @@ func (t *Transaction) String() string {
 	return sb.String()
 }
 
-func (t *Transaction) SetBlockHash(bh BlockHash) {
-	t.Message.RecentBlockHash = bh
+func (t *Transaction) SetBlockhash(bh Blockhash) {
+	t.Message.RecentBlockhash = bh
 }
 
 func (t *Transaction) Sign(signers ...ed25519.PrivateKey) error {

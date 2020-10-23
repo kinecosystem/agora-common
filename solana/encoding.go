@@ -58,7 +58,7 @@ func (m Message) Marshal() []byte {
 	}
 
 	// Recent Blockhash
-	_, _ = b.Write(m.RecentBlockHash[:])
+	_, _ = b.Write(m.RecentBlockhash[:])
 
 	// Instructions
 	_, _ = shortvec.EncodeLen(b, len(m.Instructions))
@@ -105,7 +105,7 @@ func (m *Message) Unmarshal(b []byte) (err error) {
 	}
 
 	// Recent block hash
-	if _, err = io.ReadFull(buf, m.RecentBlockHash[:]); err != nil {
+	if _, err = io.ReadFull(buf, m.RecentBlockhash[:]); err != nil {
 		return errors.Wrap(err, "failed to read recent block hash")
 	}
 
