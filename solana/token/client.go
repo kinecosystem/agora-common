@@ -55,5 +55,9 @@ func (c *Client) GetAccount(accountID ed25519.PublicKey, commitment solana.Commi
 		return nil, ErrInvalidTokenAccount
 	}
 
+	if !bytes.Equal(c.token, account.Mint) {
+		return nil, ErrInvalidTokenAccount
+	}
+
 	return &account, nil
 }
