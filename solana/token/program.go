@@ -181,6 +181,52 @@ func SetAuthority(account, currentAuthority, newAuthority ed25519.PublicKey, aut
 	)
 }
 
+type DecompiledSetAuthority struct {
+	Account          ed25519.PublicKey
+	CurrentAuthority ed25519.PublicKey
+	NewAuthority     ed25519.PublicKey
+	Type             AuthorityType
+}
+
+func DecompileSetAuthority(m solana.Message, index int) (*DecompiledSetAuthority, error) {
+	if index >= len(m.Instructions) {
+		return nil, errors.Errorf("instruction doesn't exist at %d", index)
+	}
+
+	i := m.Instructions[index]
+
+	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey) {
+		return nil, solana.ErrIncorrectProgram
+	}
+	if len(i.Accounts) != 2 {
+		return nil, errors.Errorf("invalid number of accounts: %d", len(i.Accounts))
+	}
+	if len(i.Data) < 3 {
+		return nil, errors.Errorf("invalid data size: %d (expect at least 3)", len(i.Data))
+	}
+	if i.Data[0] != byte(commandSetAuthority) {
+		return nil, solana.ErrIncorrectInstruction
+	}
+	if i.Data[2] == 0 && len(i.Data) != 3 {
+		return nil, errors.Errorf("invalid data size: %d (expect 3)", len(i.Data))
+	}
+	if i.Data[2] == 1 && len(i.Data) != 3+ed25519.PublicKeySize {
+		return nil, errors.Errorf("invalid data size: %d (expect %d)", len(i.Data), 3+ed25519.PublicKeySize)
+	}
+
+	decompiled := &DecompiledSetAuthority{
+		Account:          m.Accounts[i.Accounts[0]],
+		CurrentAuthority: m.Accounts[i.Accounts[1]],
+		Type:             AuthorityType(i.Data[1]),
+	}
+
+	if i.Data[2] == 1 {
+		decompiled.NewAuthority = i.Data[3 : 3+ed25519.PublicKeySize]
+	}
+
+	return decompiled, nil
+}
+
 // todo(feature): support multi-sig
 //
 // Reference: https://github.com/solana-labs/solana-program-library/blob/b011698251981b5a12088acba18fad1d41c3719a/token/program/src/instruction.rs#L76-L91
