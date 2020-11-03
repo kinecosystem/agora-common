@@ -148,9 +148,9 @@ type AuthorityType byte
 
 const (
 	AuthorityTypeMintTokens AuthorityType = iota
-	AuthorityFreezeAccount
-	AuthorityAccountHolder
-	AuthorityCloseAccount
+	AuthorityTypeFreezeAccount
+	AuthorityTypeAccountHolder
+	AuthorityTypeCloseAccount
 )
 
 // Reference: https://github.com/solana-labs/solana-program-library/blob/b011698251981b5a12088acba18fad1d41c3719a/token/program/src/instruction.rs#L128-L139

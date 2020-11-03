@@ -52,10 +52,10 @@ func TestInitializeAccount(t *testing.T) {
 func TestTestAuthority(t *testing.T) {
 	keys := generateKeys(t, 3)
 
-	instruction := SetAuthority(keys[0], keys[1], keys[2], AuthorityCloseAccount)
+	instruction := SetAuthority(keys[0], keys[1], keys[2], AuthorityTypeCloseAccount)
 
 	assert.EqualValues(t, 6, instruction.Data[0])
-	assert.EqualValues(t, AuthorityCloseAccount, instruction.Data[1])
+	assert.EqualValues(t, AuthorityTypeCloseAccount, instruction.Data[1])
 
 	assert.False(t, instruction.Accounts[0].IsSigner)
 	assert.True(t, instruction.Accounts[0].IsWritable)
@@ -68,7 +68,7 @@ func TestTestAuthority(t *testing.T) {
 	assert.Equal(t, keys[0], decompiled.Account)
 	assert.Equal(t, keys[1], decompiled.CurrentAuthority)
 	assert.Equal(t, keys[2], decompiled.NewAuthority)
-	assert.Equal(t, AuthorityCloseAccount, decompiled.Type)
+	assert.Equal(t, AuthorityTypeCloseAccount, decompiled.Type)
 
 	// Mess with the instruction for validation
 	instruction.Data = instruction.Data[:len(instruction.Data)-2]
@@ -98,9 +98,9 @@ func TestTestAuthority(t *testing.T) {
 func TestTestAuthority_NoNewAuthority(t *testing.T) {
 	keys := generateKeys(t, 3)
 
-	instruction := SetAuthority(keys[0], keys[1], nil, AuthorityCloseAccount)
+	instruction := SetAuthority(keys[0], keys[1], nil, AuthorityTypeCloseAccount)
 
-	assert.EqualValues(t, []byte{6, byte(AuthorityCloseAccount), 0}, instruction.Data)
+	assert.EqualValues(t, []byte{6, byte(AuthorityTypeCloseAccount), 0}, instruction.Data)
 
 	assert.False(t, instruction.Accounts[0].IsSigner)
 	assert.True(t, instruction.Accounts[0].IsWritable)
@@ -113,7 +113,7 @@ func TestTestAuthority_NoNewAuthority(t *testing.T) {
 	assert.Equal(t, keys[0], decompiled.Account)
 	assert.Equal(t, keys[1], decompiled.CurrentAuthority)
 	assert.Nil(t, decompiled.NewAuthority)
-	assert.Equal(t, AuthorityCloseAccount, decompiled.Type)
+	assert.Equal(t, AuthorityTypeCloseAccount, decompiled.Type)
 
 	// Mess with the instruction for validation
 	instruction.Data = append(instruction.Data, 0)
