@@ -12,6 +12,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	// MaxTransactionSize taken from: https://github.com/solana-labs/solana/blob/39b3ac6a8d29e14faa1de73d8b46d390ad41797b/sdk/src/packet.rs#L9-L13
+	MaxTransactionSize = 1232
+)
+
 type Signature [ed25519.SignatureSize]byte
 type Blockhash [sha256.Size]byte
 
