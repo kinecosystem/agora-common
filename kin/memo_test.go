@@ -206,3 +206,31 @@ func TestMemoFromXDR(t *testing.T) {
 	require.True(t, valid)
 	require.Equal(t, strictlyValidMemo, actual)
 }
+
+func TestMemoFromBase64(t *testing.T) {
+	validMemo, _ := NewMemo(2, TransactionTypeEarn, 1, make([]byte, 29))
+	actual, err := MemoFromBase64String(base64.StdEncoding.EncodeToString(validMemo[:]), false)
+	require.NoError(t, err)
+	require.Equal(t, validMemo, actual)
+
+	_, err = MemoFromBase64String(base64.StdEncoding.EncodeToString(validMemo[:]), true)
+	require.Error(t, err)
+
+	strictlyValidMemo, _ := NewMemo(1, TransactionTypeEarn, 1, make([]byte, 29))
+	actual, err = MemoFromBase64String(base64.StdEncoding.EncodeToString(strictlyValidMemo[:]), false)
+	require.NoError(t, err)
+	require.Equal(t, strictlyValidMemo, actual)
+
+	actual, err = MemoFromBase64String(base64.StdEncoding.EncodeToString(strictlyValidMemo[:]), true)
+	require.NoError(t, err)
+	require.Equal(t, strictlyValidMemo, actual)
+
+	invalidMemos := []string{
+		"somememo",
+		base64.StdEncoding.EncodeToString([]byte("somememo")),
+	}
+	for _, m := range invalidMemos {
+		_, err := MemoFromBase64String(m, false)
+		require.Error(t, err)
+	}
+}

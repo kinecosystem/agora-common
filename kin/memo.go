@@ -114,6 +114,27 @@ func MemoFromXDRString(b64 string, strict bool) (m Memo, err error) {
 	return m, nil
 }
 
+func MemoFromBase64String(b64 string, strict bool) (m Memo, err error) {
+	b, err := base64.StdEncoding.DecodeString(b64)
+	if err != nil {
+		return m, errors.Wrap(err, "invalid b64")
+	}
+
+	copy(m[:], b)
+	if strict {
+		if ok := IsValidMemoStrict(m); !ok {
+			return m, errors.New("not a valid memo")
+		}
+		return m, nil
+	}
+
+	if ok := IsValidMemo(m); !ok {
+		return m, errors.New("not a valid memo")
+	}
+
+	return m, nil
+}
+
 // IsValidMemo returns whether or not the memo is valid.
 //
 // It should be noted that there are no guarantees if the
