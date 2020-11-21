@@ -69,15 +69,14 @@ func NewTransaction(payer ed25519.PublicKey, instructions ...Instruction) Transa
 	for _, account := range accounts {
 		m.Accounts = append(m.Accounts, account.PublicKey)
 
-		if account.IsWritable && account.IsSigner {
+		if account.IsSigner {
 			m.Header.NumSignatures++
-		}
-		if !account.IsWritable {
-			if account.IsSigner {
+
+			if !account.IsWritable {
 				m.Header.NumReadonlySigned++
-			} else {
-				m.Header.NumReadOnly++
 			}
+		} else if !account.IsWritable {
+			m.Header.NumReadOnly++
 		}
 	}
 
@@ -103,7 +102,7 @@ func NewTransaction(payer ed25519.PublicKey, instructions ...Instruction) Transa
 	}
 
 	return Transaction{
-		Signatures: make([]Signature, m.Header.NumSignatures+m.Header.NumReadonlySigned),
+		Signatures: make([]Signature, m.Header.NumSignatures),
 		Message:    m,
 	}
 }

@@ -150,7 +150,7 @@ func TestTransaction_SingleInstruction(t *testing.T) {
 
 	require.Len(t, tx.Signatures, 3)
 	require.Len(t, tx.Message.Accounts, 6)
-	assert.EqualValues(t, 2, tx.Message.Header.NumSignatures)
+	assert.EqualValues(t, 3, tx.Message.Header.NumSignatures)
 	assert.EqualValues(t, 1, tx.Message.Header.NumReadonlySigned)
 	assert.EqualValues(t, 2, tx.Message.Header.NumReadOnly)
 
@@ -213,7 +213,7 @@ func TestTransaction_DuplicateKeys(t *testing.T) {
 
 	require.Len(t, tx.Signatures, 4)
 	require.Len(t, tx.Message.Accounts, 6)
-	assert.EqualValues(t, 3, tx.Message.Header.NumSignatures)
+	assert.EqualValues(t, 4, tx.Message.Header.NumSignatures)
 	assert.EqualValues(t, 1, tx.Message.Header.NumReadonlySigned)
 	assert.EqualValues(t, 1, tx.Message.Header.NumReadOnly)
 
