@@ -302,6 +302,67 @@ func TestTaskQueue_Submitter(t *testing.T) {
 	require.Len(t, msgCh, 0)
 }
 
+func TestTaskQueue_SubmitterBatch(t *testing.T) {
+	queueName := fmt.Sprintf("%s%s", "test-queue-", uuid.New().String())
+	setupQueue(t, queueName)
+	defer deleteQueue(t, queueName)
+
+	s, err := NewSubmitter(queueName, sqsClient)
+	require.NoError(t, err)
+
+	expectedMsgs := make(map[string]struct{})
+	msgs := make([]*task.Message, 25)
+
+	for i := 0; i < 25; i++ {
+		msg := &task.Message{
+			TypeName: "something",
+			RawValue: []byte(fmt.Sprintf("hello%d", i)),
+		}
+		msgs[i] = msg
+		msgBytes, err := proto.Marshal(msg)
+		require.NoError(t, err)
+		expectedMsgs[string(msgBytes)] = struct{}{}
+	}
+
+	require.NoError(t, s.SubmitBatch(context.Background(), msgs))
+
+	// No task messages should be consumed
+	time.Sleep(500 * time.Millisecond)
+	// todo(metrics): verify no successes or failures
+
+	msgCh := make(chan task.Message, 100)
+	defer close(msgCh)
+	p, err := NewProcessor(queueName, sqsClient, func(ctx context.Context, msg *task.Message) error {
+		select {
+		case msgCh <- *msg:
+		default:
+			require.Fail(t, "task chan full")
+		}
+		return nil
+	})
+	require.NoError(t, err)
+	defer p.Shutdown()
+
+	// Processor should consume tasks
+	// todo(metrics): 10 successes, no failures
+	require.NoError(t, testutil.WaitFor(2*time.Second, 200*time.Millisecond, func() bool {
+		// todo(metrics): 2 success
+		return len(msgCh) == 25
+	}))
+
+	for i := 0; i < 25; i++ {
+		msg := <-msgCh
+
+		msgBytes, err := proto.Marshal(&msg)
+		require.NoError(t, err)
+
+		_, ok := expectedMsgs[string(msgBytes)]
+		require.True(t, ok)
+	}
+
+	require.Len(t, msgCh, 0)
+}
+
 func TestTaskQueue_VisibilityTimeoutExceeded(t *testing.T) {
 	queueName := fmt.Sprintf("%s%s", "test-queue-", uuid.New().String())
 	setupQueue(t, queueName)

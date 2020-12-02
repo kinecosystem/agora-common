@@ -28,6 +28,10 @@ type config struct {
 	// MaxVisibilityExtensions is the maximum amount of of extensions that can
 	// be made for a single task before becoming visibile on the queue again.
 	MaxVisibilityExtensions int
+
+	// PausedStart indicates that the processor's initial state should be paused.
+	// In this state, the processor won't process tasks until Start() is called.
+	PausedStart bool
 }
 
 // Option configures a Processor.
@@ -65,6 +69,13 @@ func WithVisibilityExtensionEnabled(enabled bool) Option {
 func WithMaxVisibilityExtensions(max int) Option {
 	return func(c *config) {
 		c.MaxVisibilityExtensions = max
+	}
+}
+
+// WithPausedStart configures the processor to be initialized in a paused state.
+func WithPausedStart() Option {
+	return func(c *config) {
+		c.PausedStart = true
 	}
 }
 

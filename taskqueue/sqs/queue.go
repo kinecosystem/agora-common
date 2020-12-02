@@ -3,6 +3,8 @@ package sqs
 import (
 	"context"
 	"encoding/base64"
+	"math"
+	"strconv"
 	"sync"
 	"time"
 
@@ -19,7 +21,16 @@ import (
 )
 
 const (
+	// 256 KiB max message size
+	//
+	// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
 	sqsByteLimit = 262144
+
+	// Maximum of 10 messages per batch.
+	//
+	// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-client-side-buffering-request-batching.html
+	// https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/quotas-messages.html
+	sqsBatchLimit = 10
 )
 
 type queue struct {
@@ -33,6 +44,10 @@ type queue struct {
 
 	shutdownCh   chan struct{}
 	shutdownOnce sync.Once
+
+	runLock   sync.RWMutex
+	stateLock sync.Mutex
+	running   bool
 }
 
 func NewProcessorCtor(queueName string, sqsClient sqsiface.ClientAPI, opts ...Option) taskqueue.ProcessorCtor {
@@ -67,6 +82,12 @@ func newQueue(queueName string, sqsClient sqsiface.ClientAPI, handler taskqueue.
 
 	for _, o := range opts {
 		o(&q.conf)
+	}
+
+	if q.conf.PausedStart {
+		q.runLock.Lock()
+	} else {
+		q.running = true
 	}
 
 	resp, err := sqsClient.GetQueueUrlRequest(&sqs.GetQueueUrlInput{
@@ -113,10 +134,70 @@ func (q *queue) Submit(ctx context.Context, msg *task.Message) error {
 	return nil
 }
 
+// SubmitBatch implements taskqueue.Submitter.SubmitBatch,
+func (q *queue) SubmitBatch(ctx context.Context, msgs []*task.Message) error {
+	select {
+	case <-q.shutdownCh:
+		return errors.New("queue shutting down")
+	default:
+	}
+
+	entries := make([]sqs.SendMessageBatchRequestEntry, len(msgs))
+	for i := 0; i < len(msgs); i++ {
+		msgBody, err := marshalTask(msgs[i])
+		if err != nil {
+			return errors.Wrap(err, "failed to marshal task")
+		}
+
+		entries[i] = sqs.SendMessageBatchRequestEntry{
+			Id:          aws.String(strconv.Itoa(i)),
+			MessageBody: aws.String(msgBody),
+		}
+	}
+
+	for batchStart := 0; batchStart < len(entries); batchStart += sqsBatchLimit {
+		batchEnd := int(math.Min(float64(batchStart+sqsBatchLimit), float64(len(entries))))
+
+		_, err := q.sqs.SendMessageBatchRequest(&sqs.SendMessageBatchInput{
+			QueueUrl: aws.String(q.queueURL),
+			Entries:  entries[batchStart:batchEnd],
+		}).Send(ctx)
+		if err != nil {
+			return errors.Wrap(err, "failed to submit task")
+		}
+	}
+
+	return nil
+}
+
+func (q *queue) Start() {
+	q.stateLock.Lock()
+	defer q.stateLock.Unlock()
+
+	if !q.running {
+		q.running = true
+		q.runLock.Unlock()
+	}
+}
+
+func (q *queue) Pause() {
+	q.stateLock.Lock()
+	defer q.stateLock.Unlock()
+
+	if q.running {
+		q.running = false
+		q.runLock.Lock()
+	}
+}
+
 func (q *queue) Shutdown() {
 	q.shutdownOnce.Do(func() {
 		log := q.log.WithField("method", "Shutdown")
 		close(q.shutdownCh)
+
+		// we call start to ensure that any task worker currently
+		// blocked on the runlock becomes unblocked.
+		q.Start()
 
 		gracePeriod := q.conf.VisibilityTimeout
 		if ok := waitForGroup(&q.wg, gracePeriod); !ok {
@@ -140,14 +221,15 @@ func (q *queue) taskWorker(id int) {
 		default:
 		}
 
-		// todo(config?): temp disable at runtime.
-
+		q.runLock.RLock()
 		resp, err := q.sqs.ReceiveMessageRequest(&sqs.ReceiveMessageInput{
 			QueueUrl:            aws.String(q.queueURL),
 			MaxNumberOfMessages: aws.Int64(1),
 			VisibilityTimeout:   aws.Int64(int64(q.conf.VisibilityTimeout.Seconds())),
 			WaitTimeSeconds:     aws.Int64(int64(q.conf.PollingInterval.Seconds())),
 		}).Send(context.Background())
+		q.runLock.RUnlock()
+
 		if err != nil {
 			log.WithError(err).Warn("failed to poll for tasks")
 			time.Sleep(5 * time.Second)

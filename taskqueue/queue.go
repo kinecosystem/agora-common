@@ -28,10 +28,13 @@ type ProcessorCtor func(handler Handler) (Processor, error)
 type Processor interface {
 	Submitter
 
+	Start()
+	Pause()
 	Shutdown()
 }
 
 // Submitter submits messages to the task queue.
 type Submitter interface {
 	Submit(ctx context.Context, msg *task.Message) error
+	SubmitBatch(ctx context.Context, msgs []*task.Message) error
 }
