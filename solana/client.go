@@ -384,8 +384,6 @@ func (c *client) GetAccountInfo(account ed25519.PublicKey, commitment Commitment
 		return accountInfo, errors.Wrap(err, "failed to send request")
 	}
 
-	c.log.WithField("response", resp).Info("getInfoResult")
-
 	if resp.Value == nil {
 		return accountInfo, ErrNoAccountInfo
 	}

@@ -142,10 +142,6 @@ func (t *Transaction) SetBlockhash(bh Blockhash) {
 }
 
 func (t *Transaction) Sign(signers ...ed25519.PrivateKey) error {
-	if len(signers) > len(t.Signatures) {
-		return errors.Errorf("too many signers")
-	}
-
 	messageBytes := t.Message.Marshal()
 
 	for _, s := range signers {

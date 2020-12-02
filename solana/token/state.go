@@ -16,6 +16,9 @@ const (
 // Reference: https://github.com/solana-labs/solana-program-library/blob/11b1e3eefdd4e523768d63f7c70a7aa391ea0d02/token/program/src/state.rs#L125
 const AccountSize = 165
 
+// Reference: https://github.com/solana-labs/solana-program-library/blob/8944f428fe693c3a4226bf766a79be9c75e8e520/token/program/src/state.rs#L214
+const MultisigAccountSize = 355
+
 type Account struct {
 	// The mint associated with this account
 	Mint ed25519.PublicKey

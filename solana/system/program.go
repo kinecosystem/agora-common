@@ -108,3 +108,43 @@ func DecompileCreateAccount(m solana.Message, index int) (*DecompiledCreateAccou
 
 	return v, nil
 }
+
+// Reference: https://github.com/solana-labs/solana/blob/f02a78d8fff2dd7297dc6ce6eb5a68a3002f5359/sdk/src/system_instruction.rs#L113-L119
+func AdvanceNonce(account, authority ed25519.PublicKey) solana.Instruction {
+	/// # Account references
+	///   0. [WRITE, SIGNER] Nonce account
+	///   1. [] RecentBlockhashes sysvar
+	///   2. [SIGNER] Nonce authority
+	data := make([]byte, 4)
+	binary.LittleEndian.PutUint32(data, commandAdvanceNonceAccount)
+
+	return solana.NewInstruction(
+		programKey[:],
+		data,
+		solana.NewAccountMeta(account, true),
+		solana.NewReadonlyAccountMeta(RecentBlockhashesSysVar, false),
+		solana.NewReadonlyAccountMeta(authority, true),
+	)
+}
+
+// GetNonceValueFromAccount returns the nonce value of a nonce account.
+//
+// Layout references:
+// https://github.com/solana-labs/solana/blob/d7b9aca87b0327266cde4f0116113a4203642130/web3.js/src/nonce-account.js#L16-L22
+// https://github.com/solana-labs/solana/blob/a4956844bdd081e7b90508066c579f29be306ce7/sdk/program/src/nonce/state/current.rs#L26
+func GetNonceValueFromAccount(info solana.AccountInfo) (val solana.Blockhash, err error) {
+	if len(info.Data) != 80 {
+		return val, errors.Errorf("invalid nonce account size: %d", len(info.Data))
+	}
+	if !bytes.Equal(info.Owner, programKey[:]) {
+		return val, errors.Errorf("invalid nonce account (not owned by sys program)")
+	}
+
+	// (4)     u32: version
+	// (4)     u32: size
+	// (32) pubKey: authority
+	// (32) pubkey: blockhash/value
+	start := 4 + 4 + ed25519.PublicKeySize
+	copy(val[:], info.Data[start:start+ed25519.PublicKeySize])
+	return val, nil
+}

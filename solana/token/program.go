@@ -144,6 +144,27 @@ func DecompileInitializeAccount(m solana.Message, index int) (*DecompiledInitial
 	}, nil
 }
 
+// Reference: https://github.com/solana-labs/solana-program-library/blob/b011698251981b5a12088acba18fad1d41c3719a/token/program/src/instruction.rs#L41-L55
+func InitializeMultisig(account ed25519.PublicKey, requiredSigners byte, signers ...ed25519.PublicKey) solana.Instruction {
+	// Accounts expected by this instruction:
+	//
+	//   0. `[writable]` The multisignature account to initialize.
+	//   1. `[]` Rent sysvar
+	//   2. ..2+N. `[]` The signer accounts, must equal to N where 1 <= N <= 11.
+	accounts := make([]solana.AccountMeta, 2+len(signers))
+	accounts[0] = solana.NewAccountMeta(account, false)
+	accounts[1] = solana.NewReadonlyAccountMeta(system.RentSysVar, false)
+	for i := 0; i < len(signers); i++ {
+		accounts[i+2] = solana.NewReadonlyAccountMeta(signers[i], false)
+	}
+
+	return solana.NewInstruction(
+		ProgramKey,
+		[]byte{byte(commandInitializeMultisig), requiredSigners},
+		accounts...,
+	)
+}
+
 type AuthorityType byte
 
 const (
@@ -253,6 +274,38 @@ func Transfer(source, dest, owner ed25519.PublicKey, amount uint64) solana.Instr
 		solana.NewAccountMeta(source, false),
 		solana.NewAccountMeta(dest, false),
 		solana.NewAccountMeta(owner, true),
+	)
+}
+
+func TransferMultisig(source, dest, multisigOwner ed25519.PublicKey, amount uint64, signers ...ed25519.PublicKey) solana.Instruction {
+	// Accounts expected by this instruction:
+	//
+	//   * Single owner/delegate
+	//   0. `[writable]` The source account.
+	//   1. `[writable]` The destination account.
+	//   2. `[signer]` The source account's owner/delegate.
+	//
+	//   * Multisignature owner/delegate
+	//   0. `[writable]` The source account.
+	//   1. `[writable]` The destination account.
+	//   2. `[]` The source account's multisignature owner/delegate.
+	//   3. ..3+M `[signer]` M signer accounts.
+	data := make([]byte, 1+8)
+	data[0] = byte(commandTransfer)
+	binary.LittleEndian.PutUint64(data[1:], amount)
+
+	accounts := make([]solana.AccountMeta, 3+len(signers))
+	accounts[0] = solana.NewAccountMeta(source, false)
+	accounts[1] = solana.NewAccountMeta(dest, false)
+	accounts[2] = solana.NewReadonlyAccountMeta(multisigOwner, false)
+	for i := 0; i < len(signers); i++ {
+		accounts[3+i] = solana.NewReadonlyAccountMeta(signers[i], true)
+	}
+
+	return solana.NewInstruction(
+		ProgramKey,
+		data,
+		accounts...,
 	)
 }
 

@@ -68,6 +68,48 @@ func TestDecompileNonCreate(t *testing.T) {
 	assert.True(t, strings.HasPrefix(err.Error(), "instruction doesn't exist"))
 }
 
+func TestAdvanceNonceAccount(t *testing.T) {
+	keys := generateKeys(t, 2)
+
+	instruction := AdvanceNonce(keys[0], keys[1])
+
+	command := make([]byte, 4)
+	binary.LittleEndian.PutUint32(command, commandAdvanceNonceAccount)
+	assert.EqualValues(t, command, instruction.Data)
+	assert.EqualValues(t, programKey[:], instruction.Program)
+
+	require.Len(t, instruction.Accounts, 3)
+
+	assert.EqualValues(t, keys[0], instruction.Accounts[0].PublicKey)
+	assert.True(t, instruction.Accounts[0].IsSigner)
+	assert.True(t, instruction.Accounts[0].IsWritable)
+
+	assert.EqualValues(t, RecentBlockhashesSysVar, instruction.Accounts[1].PublicKey)
+	assert.False(t, instruction.Accounts[1].IsSigner)
+	assert.False(t, instruction.Accounts[1].IsWritable)
+
+	assert.EqualValues(t, keys[1], instruction.Accounts[2].PublicKey)
+	assert.True(t, instruction.Accounts[2].IsSigner)
+}
+
+func TestGetNonceValue(t *testing.T) {
+	// lay
+	info := solana.AccountInfo{
+		Data:  make([]byte, 80),
+		Owner: programKey[:],
+	}
+
+	var val solana.Blockhash
+	for i := 0; i < 32; i++ {
+		val[i] = byte(i)
+	}
+	copy(info.Data[4+4+32:], val[:])
+
+	actual, err := GetNonceValueFromAccount(info)
+	assert.NoError(t, err)
+	assert.EqualValues(t, val, actual)
+}
+
 func generateKeys(t *testing.T, amount int) []ed25519.PublicKey {
 	keys := make([]ed25519.PublicKey, amount)
 
