@@ -439,6 +439,20 @@ func (c *client) SubmitTransaction(txn Transaction, commitment Commitment) (Sign
 		return sig, &SignatureStatus{ErrorResult: txResult}, nil
 	}
 
+	// todo(config): set this as a tunable option.
+	//
+	// Currently, max and root commitments take ~32 slots before they
+	// register. To avoid spamming GetSignatureStatus(), we simply sleep
+	// before attempting to poll. This saves a lot of HTTP requests under
+	// the hood in this situation.
+	//
+	// Note: if we overshoot, it's latency performance hit, but still an
+	//       overall performance gain. Most of these types will be batch
+	//       or low volume tools.
+	if commitment == CommitmentMax || commitment == CommitmentRoot {
+		time.Sleep((32 / slotsPerSec) * time.Second)
+	}
+
 	status, err := c.GetSignatureStatus(txn.Signatures[0], commitment)
 	return sig, status, err
 }
