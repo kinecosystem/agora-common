@@ -1,6 +1,7 @@
 package retry
 
 import (
+	"errors"
 	"math"
 	"math/rand"
 	"time"
@@ -24,7 +25,7 @@ func Limit(maxAttempts uint) Strategy {
 func RetriableErrors(retriableErrors ...error) Strategy {
 	return func(attempts uint, err error) bool {
 		for _, e := range retriableErrors {
-			if e == err {
+			if errors.Is(err, e) {
 				return true
 			}
 		}
@@ -37,7 +38,7 @@ func RetriableErrors(retriableErrors ...error) Strategy {
 func NonRetriableErrors(nonRetriableErrors ...error) Strategy {
 	return func(attempts uint, err error) bool {
 		for _, e := range nonRetriableErrors {
-			if e == err {
+			if errors.Is(err, e) {
 				return false
 			}
 		}

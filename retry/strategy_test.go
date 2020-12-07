@@ -1,11 +1,11 @@
 package retry
 
 import (
-	"errors"
 	"math"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/kinecosystem/agora-common/retry/backoff"
@@ -37,8 +37,10 @@ func TestRetriableErrors(t *testing.T) {
 	strategy := RetriableErrors(retriableErrors...)
 	for _, err := range retriableErrors {
 		assert.True(t, strategy(1, err))
+		// Ensure wrapped errors are detected.
+		assert.True(t, strategy(1, errors.Wrap(err, "wrapper")))
 	}
-	assert.False(t, strategy(1, errors.New("unexpected")))
+	assert.False(t, strategy(2, errors.New("unexpected")))
 }
 
 func TestNonRetriableErrors(t *testing.T) {
@@ -51,6 +53,8 @@ func TestNonRetriableErrors(t *testing.T) {
 	strategy := NonRetriableErrors(nonRetriableErrors...)
 	for _, err := range nonRetriableErrors {
 		assert.False(t, strategy(1, err))
+		// Ensure wrapped errors are detected.
+		assert.False(t, strategy(1, errors.Wrap(err, "wrapper")))
 	}
 	assert.True(t, strategy(1, errors.New("unexpected")))
 }
