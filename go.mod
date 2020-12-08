@@ -20,9 +20,13 @@ require (
 	github.com/goburrow/cache v0.1.0
 	github.com/golang/protobuf v1.4.2
 	github.com/google/uuid v1.1.1
+	github.com/gorilla/handlers v1.5.1
+	github.com/gorilla/mux v1.6.2
+	github.com/gorilla/websocket v1.4.0
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
+	github.com/grpc-ecosystem/grpc-gateway v1.9.0
 	github.com/kinecosystem/go v0.0.0-20191108204735-d6832148266e
 	github.com/lib/pq v1.5.2 // indirect
 	github.com/mr-tron/base58 v1.2.0
