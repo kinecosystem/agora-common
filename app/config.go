@@ -17,6 +17,8 @@ type BaseConfig struct {
 	ListenAddress       string        `mapstructure:"listen_address"`
 	ShutdownGracePeriod time.Duration `mapstructure:"shutdown_grace_period"`
 
+	HTTPGatewayAddress string `mapstructure:"http_gateway_address"`
+
 	// TLSCertificate is an optional URL that specified a TLS certificate to be
 	// used for the gRPC server.
 	//
@@ -45,6 +47,8 @@ var defaultConfig = BaseConfig{
 
 	ListenAddress:       ":8085",
 	ShutdownGracePeriod: 30 * time.Second,
+
+	HTTPGatewayAddress: ":8080",
 
 	EnablePprof:        true,
 	EnableExpvar:       true,

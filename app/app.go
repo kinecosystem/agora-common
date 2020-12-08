@@ -26,6 +26,7 @@ import (
 	healthgrpc "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/kinecosystem/agora-common/headers"
+	"github.com/kinecosystem/agora-common/httpgateway"
 	"github.com/kinecosystem/agora-common/protobuf/validation"
 )
 
@@ -218,6 +219,33 @@ func Run(app App, options ...Option) error {
 
 		close(servShutdownCh)
 	}()
+
+	if opts.httpGatewayEnabled {
+		go func() {
+			var securityOpt grpc.DialOption
+			if config.TLSCertificate != "" {
+				securityOpt = grpc.WithTransportCredentials(credentials.NewTLS(nil))
+			} else {
+				securityOpt = grpc.WithInsecure()
+			}
+
+			cc, err := grpc.Dial(
+				lis.Addr().String(),
+				securityOpt,
+				grpc.WithDefaultCallOptions(grpc.ForceCodec(&httpgateway.BinaryCodec{})),
+			)
+			if err != nil {
+				logger.WithError(err).Errorf("failed to dial %s", lis.Addr().String())
+				return
+			}
+
+			m := httpgateway.New(serv, cc, opts.httpGatewayOptions...)
+			if err := m.ListenAndServeHTTP(config.HTTPGatewayAddress); err != nil {
+				logger.WithError(err).Warn("failed to serve")
+				return
+			}
+		}()
+	}
 
 	// Wait for the following shutdown conditions:
 	//    1. OS Signal telling us to shutdown
