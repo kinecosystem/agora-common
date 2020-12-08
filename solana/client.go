@@ -120,9 +120,14 @@ type client struct {
 
 // New returns a client using the specified endpoint.
 func New(endpoint string) Client {
+	return NewWithRPCOptions(endpoint, nil)
+}
+
+// NewWithRPCOptions returns a client configured with the specified RPC options.
+func NewWithRPCOptions(endpoint string, opts *jsonrpc.RPCClientOpts) Client {
 	return &client{
 		log:    logrus.StandardLogger().WithField("type", "solana/client"),
-		client: jsonrpc.NewClient(endpoint),
+		client: jsonrpc.NewClientWithOpts(endpoint, opts),
 		retrier: retry.NewRetrier(
 			retry.RetriableErrors(errRateLimited, errServiceError),
 			retry.Limit(3),
