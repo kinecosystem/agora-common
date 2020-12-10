@@ -224,7 +224,10 @@ func Run(app App, options ...Option) error {
 		go func() {
 			var securityOpt grpc.DialOption
 			if config.TLSCertificate != "" {
-				securityOpt = grpc.WithTransportCredentials(credentials.NewTLS(nil))
+				tlsConfig := &tls.Config{
+					InsecureSkipVerify: true,
+				}
+				securityOpt = grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig))
 			} else {
 				securityOpt = grpc.WithInsecure()
 			}
