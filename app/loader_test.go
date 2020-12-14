@@ -27,7 +27,6 @@ func TestLocalLoader(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, f.Close())
 
-	fmt.Println(f.Name())
 	defer os.Remove(f.Name())
 
 	var loader LocalLoader
