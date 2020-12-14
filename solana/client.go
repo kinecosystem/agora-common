@@ -5,10 +5,12 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/mr-tron/base58"
 	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sirupsen/logrus"
 	"github.com/ybbus/jsonrpc"
 
@@ -28,6 +30,20 @@ const (
 
 	// Reference: https://github.com/solana-labs/solana/blob/14d793b22c1571fb092d5822189d5b64f32605e6/client/src/rpc_custom_error.rs#L10
 	blockNotAvailableCode = -32004
+)
+
+var (
+	rpcCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "agora",
+		Name:      "solana_rpc",
+		Help:      "Number of Solana RPCs made",
+	}, []string{"rpc_method"})
+
+	rpcErrorCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "agora",
+		Name:      "solana_rpc_error",
+		Help:      "Number of Solana RPC errors",
+	}, []string{"rpc_method", "error_code"})
 )
 
 type Commitment struct {
@@ -123,6 +139,12 @@ type client struct {
 	retrier retry.Retrier
 }
 
+func init() {
+	if err := registerMetrics(); err != nil {
+		logrus.WithError(err).Error("failed to register solana client metrics")
+	}
+}
+
 // New returns a client using the specified endpoint.
 func New(endpoint string) Client {
 	return NewWithRPCOptions(endpoint, nil)
@@ -143,6 +165,8 @@ func NewWithRPCOptions(endpoint string, opts *jsonrpc.RPCClientOpts) Client {
 
 func (c *client) call(out interface{}, method string, params ...interface{}) error {
 	_, err := c.retrier.Retry(func() error {
+		rpcCounterVec.WithLabelValues(method).Inc()
+
 		err := c.client.CallFor(out, method, params...)
 		if err == nil {
 			return nil
@@ -150,8 +174,10 @@ func (c *client) call(out interface{}, method string, params ...interface{}) err
 
 		rpcErr, ok := err.(*jsonrpc.RPCError)
 		if !ok {
+			rpcErrorCounterVec.WithLabelValues(method, "").Inc()
 			return err
 		}
+		rpcErrorCounterVec.WithLabelValues(method, strconv.Itoa(rpcErr.Code)).Inc()
 		if rpcErr.Code == 429 {
 			return errRateLimited
 		}
@@ -600,4 +626,23 @@ func (c *client) GetTokenAccountsByOwner(owner, mint ed25519.PublicKey) ([]ed255
 	}
 
 	return keys, nil
+}
+
+func registerMetrics() error {
+	if err := prometheus.Register(rpcCounterVec); err != nil {
+		if e, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			rpcCounterVec = e.ExistingCollector.(*prometheus.CounterVec)
+		} else {
+			return errors.Wrap(err, "failed to register solana rpc counter")
+		}
+	}
+
+	if err := prometheus.Register(rpcErrorCounterVec); err != nil {
+		if e, ok := err.(prometheus.AlreadyRegisteredError); ok {
+			rpcErrorCounterVec = e.ExistingCollector.(*prometheus.CounterVec)
+		} else {
+			return errors.Wrap(err, "failed to register solana rpc error counter")
+		}
+	}
+	return nil
 }
