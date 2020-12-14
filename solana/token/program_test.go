@@ -157,7 +157,59 @@ func TestTransfer(t *testing.T) {
 	assert.True(t, instruction.Accounts[1].IsWritable)
 
 	assert.True(t, instruction.Accounts[2].IsSigner)
-	assert.True(t, instruction.Accounts[2].IsWritable)
+	assert.False(t, instruction.Accounts[2].IsWritable)
+
+	decompiled, err := DecompileTransferAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NoError(t, err)
+	assert.EqualValues(t, 123456789, decompiled.Amount)
+	assert.Equal(t, keys[0], decompiled.Source)
+	assert.Equal(t, keys[1], decompiled.Destination)
+	assert.Equal(t, keys[2], decompiled.Owner)
+
+	instruction.Data = instruction.Data[:1]
+	_, err = DecompileTransferAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "invalid instruction data size"))
+
+	instruction.Accounts = instruction.Accounts[:2]
+	_, err = DecompileTransferAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
+
+	instruction.Data[0] = byte(commandApprove)
+	_, err = DecompileTransferAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+
+	instruction.Program = keys[3]
+	_, err = DecompileTransferAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectProgram, err)
+}
+
+func TestTransferMultisig(t *testing.T) {
+	keys := generateKeys(t, 6)
+
+	instruction := TransferMultisig(keys[0], keys[1], keys[2], 123456789, keys[3:]...)
+
+	expectedAmount := make([]byte, 8)
+	binary.LittleEndian.PutUint64(expectedAmount, 123456789)
+
+	assert.EqualValues(t, 3, instruction.Data[0])
+	assert.EqualValues(t, expectedAmount, instruction.Data[1:])
+
+	assert.Equal(t, 6, len(instruction.Accounts))
+
+	assert.False(t, instruction.Accounts[0].IsSigner)
+	assert.True(t, instruction.Accounts[0].IsWritable)
+	assert.False(t, instruction.Accounts[1].IsSigner)
+	assert.True(t, instruction.Accounts[1].IsWritable)
+
+	assert.False(t, instruction.Accounts[2].IsSigner)
+	assert.False(t, instruction.Accounts[2].IsWritable)
+
+	for i := 3; i < len(instruction.Accounts); i++ {
+		assert.True(t, instruction.Accounts[i].IsSigner)
+		assert.False(t, instruction.Accounts[i].IsWritable)
+	}
 
 	decompiled, err := DecompileTransferAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.NoError(t, err)

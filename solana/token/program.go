@@ -273,7 +273,7 @@ func Transfer(source, dest, owner ed25519.PublicKey, amount uint64) solana.Instr
 		data,
 		solana.NewAccountMeta(source, false),
 		solana.NewAccountMeta(dest, false),
-		solana.NewAccountMeta(owner, true),
+		solana.NewReadonlyAccountMeta(owner, true),
 	)
 }
 
@@ -329,7 +329,8 @@ func DecompileTransferAccount(m solana.Message, index int) (*DecompiledTransferA
 	if len(i.Data) == 0 || i.Data[0] != byte(commandTransfer) {
 		return nil, solana.ErrIncorrectInstruction
 	}
-	if len(i.Accounts) != 3 {
+	// note: we do < 3 instead of != 3 in order to support multisig cases.
+	if len(i.Accounts) < 3 {
 		return nil, errors.Errorf("invalid number of accounts: %d", len(i.Accounts))
 	}
 	if len(i.Data) != 9 {
