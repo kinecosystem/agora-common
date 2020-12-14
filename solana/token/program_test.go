@@ -3,6 +3,8 @@ package token
 import (
 	"crypto/ed25519"
 	"encoding/binary"
+	"encoding/hex"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -138,6 +140,60 @@ func TestTestAuthority_NoNewAuthority(t *testing.T) {
 	instruction.Program = keys[0]
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectProgram, err)
+}
+
+func TestTestAuthority_Multisig(t *testing.T) {
+	keys := generateKeys(t, 5)
+
+	instruction := SetAuthorityMultisig(keys[0], keys[1], keys[2], AuthorityTypeCloseAccount, keys[3:])
+
+	assert.EqualValues(t, 6, instruction.Data[0])
+	assert.EqualValues(t, AuthorityTypeCloseAccount, instruction.Data[1])
+
+	assert.False(t, instruction.Accounts[0].IsSigner)
+	assert.True(t, instruction.Accounts[0].IsWritable)
+
+	assert.False(t, instruction.Accounts[1].IsSigner)
+	assert.False(t, instruction.Accounts[1].IsWritable)
+
+	decompiled, err := DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, keys[0], decompiled.Account)
+	assert.Equal(t, keys[1], decompiled.CurrentAuthority)
+	assert.Equal(t, keys[2], decompiled.NewAuthority)
+	assert.Equal(t, AuthorityTypeCloseAccount, decompiled.Type)
+
+	// Mess with the instruction for validation
+	instruction.Data = instruction.Data[:len(instruction.Data)-2]
+	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "invalid data size"))
+
+	instruction.Data[0] = byte(commandApprove)
+	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+
+	instruction.Data = instruction.Data[:2]
+	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "invalid data size"))
+
+	instruction.Accounts = instruction.Accounts[:1]
+	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
+
+	instruction.Program = keys[0]
+	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectProgram, err)
+}
+
+func TestTransferBytes(t *testing.T) {
+	b := make([]byte, 8)
+	x := uint64(0x4000000280000001)
+	binary.LittleEndian.PutUint64(b, x)
+	fmt.Println(b)
+	fmt.Println(hex.EncodeToString(b))
 }
 
 func TestTransfer(t *testing.T) {

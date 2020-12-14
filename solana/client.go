@@ -61,7 +61,7 @@ var (
 
 var (
 	ErrNoAccountInfo     = errors.New("no account info")
-	ErrSignatureNotFound = errors.New("transaction not found")
+	ErrSignatureNotFound = errors.New("signature not found")
 	ErrBlockNotAvailable = errors.New("block not available")
 )
 

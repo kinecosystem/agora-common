@@ -202,6 +202,39 @@ func SetAuthority(account, currentAuthority, newAuthority ed25519.PublicKey, aut
 	)
 }
 
+func SetAuthorityMultisig(account, multisigOwner, newAuthority ed25519.PublicKey, authorityType AuthorityType, signers []ed25519.PublicKey) solana.Instruction {
+	// Sets a new authority of a mint or account.
+	//
+	// Accounts expected by this instruction:
+	//
+	//   * Single authority
+	//   0. `[writable]` The mint or account to change the authority of.
+	//   1. `[signer]` The current authority of the mint or account.
+	//
+	//   * Multisignature authority
+	//   0. `[writable]` The mint or account to change the authority of.
+	//   1. `[]` The mint's or account's multisignature authority.
+	//   2. ..2+M `[signer]` M signer accounts
+	data := []byte{byte(commandSetAuthority), byte(authorityType), 0}
+	if len(newAuthority) > 0 {
+		data[2] = 1
+		data = append(data, newAuthority...)
+	}
+
+	accounts := make([]solana.AccountMeta, 2+len(signers))
+	accounts[0] = solana.NewAccountMeta(account, false)
+	accounts[1] = solana.NewReadonlyAccountMeta(multisigOwner, false)
+	for i := 0; i < len(signers); i++ {
+		accounts[2+i] = solana.NewReadonlyAccountMeta(signers[i], true)
+	}
+
+	return solana.NewInstruction(
+		ProgramKey,
+		data,
+		accounts...,
+	)
+}
+
 type DecompiledSetAuthority struct {
 	Account          ed25519.PublicKey
 	CurrentAuthority ed25519.PublicKey
@@ -219,7 +252,7 @@ func DecompileSetAuthority(m solana.Message, index int) (*DecompiledSetAuthority
 	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey) {
 		return nil, solana.ErrIncorrectProgram
 	}
-	if len(i.Accounts) != 2 {
+	if len(i.Accounts) < 2 {
 		return nil, errors.Errorf("invalid number of accounts: %d", len(i.Accounts))
 	}
 	if len(i.Data) < 3 {
