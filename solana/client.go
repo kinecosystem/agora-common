@@ -25,6 +25,9 @@ const (
 
 	// PollRate is the rate at which blocks should be polled at.
 	PollRate = (time.Second / slotsPerSec) / 2
+
+	// Reference: https://github.com/solana-labs/solana/blob/14d793b22c1571fb092d5822189d5b64f32605e6/client/src/rpc_custom_error.rs#L10
+	blockNotAvailableCode = -32004
 )
 
 type Commitment struct {
@@ -41,6 +44,7 @@ var (
 var (
 	ErrNoAccountInfo     = errors.New("no account info")
 	ErrSignatureNotFound = errors.New("transaction not found")
+	ErrBlockNotAvailable = errors.New("block not available")
 )
 
 // AccountInfo contains the Solana account information (not to be confused with a TokenAccount)
@@ -86,6 +90,7 @@ type Client interface {
 	GetMinimumBalanceForRentExemption(size uint64) (lamports uint64, err error)
 	GetSlot(Commitment) (uint64, error)
 	GetRecentBlockhash() (Blockhash, error)
+	GetBlockTime(block uint64) (time.Time, error)
 	GetConfirmedBlock(slot uint64) (*Block, error)
 	GetConfirmedBlocksWithLimit(start, limit uint64) ([]uint64, error)
 	GetConfirmedTransaction(Signature) (ConfirmedTransaction, error)
@@ -168,7 +173,10 @@ func (c *client) GetMinimumBalanceForRentExemption(dataSize uint64) (lamports ui
 }
 
 func (c *client) GetSlot(commitment Commitment) (slot uint64, err error) {
-	if err := c.call(&slot, "getSlot", commitment); err != nil {
+	// note: we have to wrap the commitment in an []interface{} otherwise the
+	//       solana RPC node complains. Technically this is a violation of the
+	//       JSON RPC v2.0 spec.
+	if err := c.call(&slot, "getSlot", []interface{}{commitment}); err != nil {
 		return 0, errors.Wrapf(err, "failed to send request")
 	}
 
@@ -194,6 +202,22 @@ func (c *client) GetRecentBlockhash() (hash Blockhash, err error) {
 
 	copy(hash[:], hashBytes)
 	return hash, nil
+}
+
+func (c *client) GetBlockTime(slot uint64) (time.Time, error) {
+	var unixTs int64
+	if err := c.call(&unixTs, "getBlockTime", slot); err != nil {
+		jsonRPCErr, ok := err.(*jsonrpc.RPCError)
+		if !ok {
+			return time.Time{}, errors.Wrapf(err, "failed to send request")
+		}
+
+		if jsonRPCErr.Code == blockNotAvailableCode {
+			return time.Time{}, ErrBlockNotAvailable
+		}
+	}
+
+	return time.Unix(unixTs, 0), nil
 }
 
 func (c *client) GetConfirmedBlock(slot uint64) (block *Block, err error) {

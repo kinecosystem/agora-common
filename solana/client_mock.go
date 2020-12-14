@@ -3,6 +3,7 @@ package solana
 import (
 	"crypto/ed25519"
 	"sync"
+	"time"
 
 	"github.com/stretchr/testify/mock"
 )
@@ -44,6 +45,14 @@ func (m *MockClient) GetRecentBlockhash() (Blockhash, error) {
 
 	args := m.Called()
 	return args.Get(0).(Blockhash), args.Error(1)
+}
+
+func (m *MockClient) GetBlockTime(slot uint64) (time.Time, error) {
+	m.Lock()
+	defer m.Unlock()
+
+	args := m.Called(slot)
+	return args.Get(0).(time.Time), args.Error(1)
 }
 
 func (m *MockClient) GetConfirmedBlock(slot uint64) (*Block, error) {
