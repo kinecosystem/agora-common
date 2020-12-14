@@ -84,7 +84,7 @@ type ConfirmedTransaction struct {
 // Reference: https://docs.solana.com/apps/jsonrpc-api
 type Client interface {
 	GetMinimumBalanceForRentExemption(size uint64) (lamports uint64, err error)
-	GetSlot() (uint64, error)
+	GetSlot(Commitment) (uint64, error)
 	GetRecentBlockhash() (Blockhash, error)
 	GetConfirmedBlock(slot uint64) (*Block, error)
 	GetConfirmedBlocksWithLimit(start, limit uint64) ([]uint64, error)
@@ -167,8 +167,8 @@ func (c *client) GetMinimumBalanceForRentExemption(dataSize uint64) (lamports ui
 	return lamports, nil
 }
 
-func (c *client) GetSlot() (slot uint64, err error) {
-	if err := c.call(&slot, "getSlot"); err != nil {
+func (c *client) GetSlot(commitment Commitment) (slot uint64, err error) {
+	if err := c.call(&slot, "getSlot", commitment); err != nil {
 		return 0, errors.Wrapf(err, "failed to send request")
 	}
 

@@ -30,11 +30,11 @@ func (m *MockClient) GetMinimumBalanceForRentExemption(size uint64) (lamports ui
 	}
 }
 
-func (m *MockClient) GetSlot() (uint64, error) {
+func (m *MockClient) GetSlot(commitment Commitment) (uint64, error) {
 	m.Lock()
 	defer m.Unlock()
 
-	args := m.Called()
+	args := m.Called(commitment)
 	return args.Get(0).(uint64), args.Error(1)
 }
 
