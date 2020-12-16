@@ -5,7 +5,9 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
+	"math/rand"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/mr-tron/base58"
@@ -137,6 +139,10 @@ type client struct {
 	log     *logrus.Entry
 	client  jsonrpc.RPCClient
 	retrier retry.Retrier
+
+	blockMu   sync.RWMutex
+	blockhash Blockhash
+	lastWrite time.Time
 }
 
 func init() {
@@ -210,6 +216,21 @@ func (c *client) GetSlot(commitment Commitment) (slot uint64, err error) {
 }
 
 func (c *client) GetRecentBlockhash() (hash Blockhash, err error) {
+	// To avoid having thrashing around a similar periodic interval, we
+	// randomize when we refresh our block hash. This is mostly only a
+	// concern when running a batch migrator with a _ton_ of goroutines.
+	window := time.Duration(float64(15*time.Second) * (0.8 + rand.Float64()))
+
+	c.blockMu.RLock()
+	if time.Since(c.lastWrite) < window {
+		hash = c.blockhash
+	}
+	c.blockMu.RUnlock()
+
+	if hash != (Blockhash{}) {
+		return hash, nil
+	}
+
 	type response struct {
 		Value struct {
 			Blockhash string `json:"blockhash"`
@@ -227,6 +248,12 @@ func (c *client) GetRecentBlockhash() (hash Blockhash, err error) {
 	}
 
 	copy(hash[:], hashBytes)
+
+	c.blockMu.Lock()
+	c.blockhash = hash
+	c.lastWrite = time.Now()
+	c.blockMu.Unlock()
+
 	return hash, nil
 }
 
