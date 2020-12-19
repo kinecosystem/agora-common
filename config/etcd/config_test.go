@@ -36,8 +36,8 @@ func TestConfigDoesntExist(t *testing.T) {
 	require.NoError(t, err)
 	defer closeFunc()
 
-	refreshTime := 500 * time.Millisecond
-	c := NewConfig(context.Background(), client, name, refreshTime)
+	c, err := NewConfig(client, name)
+	require.NoError(t, err)
 	defer c.Shutdown()
 
 	// No data is set in etcd, so a no value error should be returned
@@ -56,11 +56,8 @@ func TestConfigOverridden(t *testing.T) {
 
 	require.NoError(t, SetBytesConfig(context.Background(), client, name, initialValue))
 
-	refreshTime := 500 * time.Millisecond
-	c := NewConfig(context.Background(), client, name, refreshTime)
+	c, err := NewConfig(client, name)
 	require.NoError(t, err)
-
-	time.Sleep(refreshTime)
 
 	value, err := c.Get(context.Background())
 	require.NoError(t, err)
@@ -68,9 +65,20 @@ func TestConfigOverridden(t *testing.T) {
 
 	require.NoError(t, SetBytesConfig(context.Background(), client, name, nextValue))
 
-	time.Sleep(refreshTime)
+	// todo: this is a bit annoying, but w/e
+	time.Sleep(500 * time.Millisecond)
 
 	// Updates to the config value should be observed and returned
+	value, err = c.Get(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, nextValue, value)
+
+	// Simulate event being deleted
+	_, err = client.Delete(context.Background(), name)
+	require.NoError(t, err)
+
+	time.Sleep(time.Second)
+
 	value, err = c.Get(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, nextValue, value)

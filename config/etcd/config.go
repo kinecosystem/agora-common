@@ -5,95 +5,136 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coreos/etcd/mvcc/mvccpb"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/etcd/clientv3"
 
 	"github.com/kinecosystem/agora-common/config"
+	"github.com/kinecosystem/agora-common/retry"
+	"github.com/kinecosystem/agora-common/retry/backoff"
 )
 
 type conf struct {
-	log *logrus.Entry
-
+	log    *logrus.Entry
 	client *clientv3.Client
 	key    string
 
-	mux        sync.RWMutex
-	kvs        []*mvccpb.KeyValue
-	err        error
-	cancelFunc context.CancelFunc
-	shutdown   bool
+	cancelWatch  func()
+	shutdownCh   chan struct{}
+	shutdownOnce sync.Once
+
+	mu    sync.RWMutex
+	val   []byte
+	empty bool
 }
 
-func NewConfig(ctx context.Context, c *clientv3.Client, key string, refreshTime time.Duration) config.Config {
-	ctx, cancelFunc := context.WithCancel(ctx)
+func NewConfig(c *clientv3.Client, key string) (config.Config, error) {
+	ctx, cancel := context.WithCancel(context.Background())
 	client := &conf{
-		log:        logrus.StandardLogger().WithField("type", "config/etcd"),
-		client:     c,
-		key:        key,
-		cancelFunc: cancelFunc,
+		log:         logrus.StandardLogger().WithField("type", "config/etcd"),
+		client:      c,
+		key:         key,
+		empty:       true,
+		cancelWatch: cancel,
+		shutdownCh:  make(chan struct{}),
 	}
-	client.watch(ctx, refreshTime)
-	return client
+
+	kvs, err := c.Get(ctx, key)
+	if err != nil {
+		cancel()
+		return nil, errors.Wrap(err, "failed to get initial value")
+	}
+
+	if len(kvs.Kvs) > 0 {
+		client.val = kvs.Kvs[0].Value
+		client.empty = false
+	}
+
+	go client.watch(ctx)
+
+	return client, nil
 }
 
 func (c *conf) Get(ctx context.Context) (interface{}, error) {
-	c.mux.RLock()
-	defer c.mux.RUnlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
-	if c.shutdown {
-		c.log.Warn("attempted use of config after shutdown")
+	select {
+	case <-c.shutdownCh:
 		return nil, config.ErrShutdown
+	default:
 	}
 
-	if c.kvs == nil {
-		if c.err != nil {
-			return nil, errors.Wrap(c.err, "failed to fetch config")
-		}
-		return nil, config.ErrNoValue
-	}
-	if len(c.kvs) == 0 {
+	if c.empty {
 		return nil, config.ErrNoValue
 	}
 
-	return c.kvs[0].Value, nil
+	return c.val, nil
 }
 
 // Shutdown implements Config.Shutdown
 func (c *conf) Shutdown() {
-	c.mux.Lock()
-	if !c.shutdown {
-		c.log.Info("shutting down")
-		c.cancelFunc()
-		c.shutdown = true
-	}
-	c.mux.Unlock()
+	c.shutdownOnce.Do(func() {
+		close(c.shutdownCh)
+		c.cancelWatch()
+	})
 }
 
-func (c *conf) watch(ctx context.Context, refreshTime time.Duration) {
-	// TODO: use watcher instead of this
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-			}
+func (c *conf) watch(ctx context.Context) {
+	_, _ = retry.Retry(
+		func() error {
+			watch := c.client.Watch(
+				ctx,
+				c.key,
+				clientv3.WithCreatedNotify(),
+				clientv3.WithFilterDelete(),
+				clientv3.WithProgressNotify(),
+			)
 
-			resp, err := c.client.Get(ctx, c.key)
+			get, err := c.client.Get(ctx, c.key)
 			if err != nil {
-				c.log.WithError(err).Warn("failed to get config")
-				time.Sleep(refreshTime)
-				continue
+				return err
+			}
+			if len(get.Kvs) > 0 {
+				c.mu.Lock()
+				c.val = get.Kvs[0].Value
+				c.mu.Unlock()
 			}
 
-			c.mux.Lock()
-			c.kvs = resp.Kvs
-			c.err = err
-			c.mux.Unlock()
+			var resp clientv3.WatchResponse
+			for resp = range watch {
+				if resp.Canceled {
+					break
+				}
 
-			time.Sleep(refreshTime)
-		}
-	}()
+				var newValue bool
+				var lastValue []byte
+				for _, e := range resp.Events {
+					if e.Type != clientv3.EventTypePut {
+						continue
+					}
+
+					lastValue = e.Kv.Value
+					newValue = true
+				}
+
+				if newValue {
+					c.mu.Lock()
+					c.val = lastValue
+					c.mu.Unlock()
+				}
+
+				// note: we should be checking for v3rpc.ErrCompacted, but
+				//       the current etcd client release is all kind of messed up.
+				//       the error is returned when resp.CompactRevision != 0
+				if resp.Err() != nil && resp.CompactRevision == 0 {
+					return resp.Err()
+				}
+			}
+
+			return errors.New("watch ended, refreshing")
+		},
+		retry.NonRetriableErrors(context.Canceled),
+		retry.BackoffWithJitter(backoff.BinaryExponential(500*time.Millisecond), 5*time.Second, 0.1),
+	)
 }
