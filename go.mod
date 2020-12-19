@@ -12,6 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v0.17.0
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
+	github.com/coreos/etcd v3.3.25+incompatible
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
@@ -42,6 +43,7 @@ require (
 	github.com/stellar/go-xdr v0.0.0-20200331223602-71a1e6d555f2 // indirect
 	github.com/stretchr/testify v1.5.1
 	github.com/ybbus/jsonrpc v2.1.2+incompatible
+	go.etcd.io/etcd v3.3.25+incompatible
 	golang.org/x/net v0.0.0-20191119073136-fc4aabc6c914 // indirect
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11 // indirect
 	google.golang.org/grpc v1.25.1
