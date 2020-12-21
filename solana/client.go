@@ -219,7 +219,7 @@ func (c *client) GetRecentBlockhash() (hash Blockhash, err error) {
 	// To avoid having thrashing around a similar periodic interval, we
 	// randomize when we refresh our block hash. This is mostly only a
 	// concern when running a batch migrator with a _ton_ of goroutines.
-	window := time.Duration(float64(15*time.Second) * (0.8 + rand.Float64()))
+	window := time.Duration(float64(2*time.Second) * (0.8 + rand.Float64()))
 
 	c.blockMu.RLock()
 	if time.Since(c.lastWrite) < window {
