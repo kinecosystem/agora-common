@@ -27,6 +27,7 @@ import (
 
 	"github.com/kinecosystem/agora-common/headers"
 	"github.com/kinecosystem/agora-common/httpgateway"
+	"github.com/kinecosystem/agora-common/metrics"
 	"github.com/kinecosystem/agora-common/protobuf/validation"
 )
 
@@ -203,7 +204,7 @@ func Run(app App, options ...Option) error {
 
 	app.RegisterWithGRPC(serv)
 	grpc_prometheus.Register(serv)
-	grpc_prometheus.EnableHandlingTimeHistogram()
+	grpc_prometheus.EnableHandlingTimeHistogram(grpc_prometheus.WithHistogramBuckets(metrics.MinuteDistributionBuckets))
 	debugHTTPMux.Handle("/metrics", promhttp.Handler())
 
 	healthgrpc.RegisterHealthServer(serv, health.NewServer())
