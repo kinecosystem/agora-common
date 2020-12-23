@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/ybbus/jsonrpc"
 
+	"github.com/kinecosystem/agora-common/metrics"
 	"github.com/kinecosystem/agora-common/retry"
 	"github.com/kinecosystem/agora-common/retry/backoff"
 )
@@ -30,23 +31,48 @@ const (
 	// PollRate is the rate at which blocks should be polled at.
 	PollRate = (time.Second / slotsPerSec) / 2
 
+	// Poll rate is ~2x the slot rate, and we want to wait ~32 slots
+	sigStatusPollLimit = 2 * 32
+
 	// Reference: https://github.com/solana-labs/solana/blob/14d793b22c1571fb092d5822189d5b64f32605e6/client/src/rpc_custom_error.rs#L10
 	blockNotAvailableCode = -32004
 )
 
 var (
 	rpcCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "agora",
-		Name:      "solana_rpc",
+		Namespace: "solana",
+		Name:      "requests_total",
 		Help:      "Number of Solana RPCs made",
-	}, []string{"rpc_method"})
-
-	rpcErrorCounterVec = prometheus.NewCounterVec(prometheus.CounterOpts{
-		Namespace: "agora",
-		Name:      "solana_rpc_error",
-		Help:      "Number of Solana RPC errors",
-	}, []string{"rpc_method", "error_code"})
+	}, []string{"method", "response_code"})
+	rpcTimings = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "solana",
+		Name:      "request_duration_seconds",
+	}, []string{"method"})
+	retryCount = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "solana",
+		Name:      "retry_count",
+		Buckets:   prometheus.LinearBuckets(1.0, 1.0, 3),
+	}, []string{"method"})
+	getSigStatusTimings = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "solana",
+		Name:      "get_signature_status_duration_seconds",
+		Help:      "Timing information for the GetSignatureStatus library call, which polls the GetSignatureStatus RPC",
+		Buckets:   metrics.MinuteDistributionBuckets,
+	}, []string{"commitment"})
+	getSigStatusRetryCount = prometheus.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "solana",
+		Name:      "get_signature_status_retry_count",
+		Buckets:   prometheus.LinearBuckets(1.0, 1.0, sigStatusPollLimit),
+	}, []string{"commitment"})
 )
+
+func init() {
+	rpcCounterVec = metrics.Register(rpcCounterVec).(*prometheus.CounterVec)
+	rpcTimings = metrics.Register(rpcTimings).(*prometheus.HistogramVec)
+	retryCount = metrics.Register(retryCount).(*prometheus.HistogramVec)
+	getSigStatusTimings = metrics.Register(getSigStatusTimings).(*prometheus.HistogramVec)
+	getSigStatusRetryCount = metrics.Register(getSigStatusRetryCount).(*prometheus.HistogramVec)
+}
 
 type Commitment struct {
 	Commitment string `json:"commitment"`
@@ -145,12 +171,6 @@ type client struct {
 	lastWrite time.Time
 }
 
-func init() {
-	if err := registerMetrics(); err != nil {
-		logrus.WithError(err).Error("failed to register solana client metrics")
-	}
-}
-
 // New returns a client using the specified endpoint.
 func New(endpoint string) Client {
 	return NewWithRPCOptions(endpoint, nil)
@@ -170,20 +190,20 @@ func NewWithRPCOptions(endpoint string, opts *jsonrpc.RPCClientOpts) Client {
 }
 
 func (c *client) call(out interface{}, method string, params ...interface{}) error {
-	_, err := c.retrier.Retry(func() error {
-		rpcCounterVec.WithLabelValues(method).Inc()
-
+	start := time.Now()
+	i, err := c.retrier.Retry(func() error {
 		err := c.client.CallFor(out, method, params...)
 		if err == nil {
+			rpcCounterVec.WithLabelValues(method, "200").Inc()
 			return nil
 		}
 
 		rpcErr, ok := err.(*jsonrpc.RPCError)
 		if !ok {
-			rpcErrorCounterVec.WithLabelValues(method, "").Inc()
+			rpcCounterVec.WithLabelValues(method, "").Inc()
 			return err
 		}
-		rpcErrorCounterVec.WithLabelValues(method, strconv.Itoa(rpcErr.Code)).Inc()
+		rpcCounterVec.WithLabelValues(method, strconv.Itoa(rpcErr.Code)).Inc()
 		if rpcErr.Code == 429 {
 			return errRateLimited
 		}
@@ -193,6 +213,9 @@ func (c *client) call(out interface{}, method string, params ...interface{}) err
 
 		return err
 	})
+	rpcTimings.WithLabelValues(method).Observe(time.Since(start).Seconds())
+	retryCount.WithLabelValues(method).Observe(float64(i))
+
 	return err
 }
 
@@ -535,12 +558,10 @@ func (c *client) GetConfirmationStatus(sig Signature, commitment Commitment) (bo
 }
 
 func (c *client) GetSignatureStatus(sig Signature, commitment Commitment) (*SignatureStatus, error) {
-	// Poll rate is ~2x the slot rate, and we want to wait ~32 slots
-	limit := uint(2 * 32)
-
 	var s *SignatureStatus
 	errConfirmationsNotReached := errors.New("confirmations not reached")
-	_, err := retry.Retry(
+	start := time.Now()
+	i, err := retry.Retry(
 		func() error {
 			statuses, err := c.GetSignatureStatuses([]Signature{sig})
 			if err != nil {
@@ -572,9 +593,11 @@ func (c *client) GetSignatureStatus(sig Signature, commitment Commitment) (*Sign
 			return errConfirmationsNotReached
 		},
 		retry.RetriableErrors(ErrSignatureNotFound, errConfirmationsNotReached),
-		retry.Limit(limit),
+		retry.Limit(sigStatusPollLimit),
 		retry.Backoff(backoff.Constant(PollRate), PollRate),
 	)
+	getSigStatusTimings.WithLabelValues(commitment.Commitment).Observe(time.Since(start).Seconds())
+	getSigStatusRetryCount.WithLabelValues(commitment.Commitment).Observe(float64(i))
 
 	return s, err
 }
@@ -667,23 +690,4 @@ func (c *client) GetTokenAccountsByOwner(owner, mint ed25519.PublicKey) ([]ed255
 	}
 
 	return keys, nil
-}
-
-func registerMetrics() error {
-	if err := prometheus.Register(rpcCounterVec); err != nil {
-		if e, ok := err.(prometheus.AlreadyRegisteredError); ok {
-			rpcCounterVec = e.ExistingCollector.(*prometheus.CounterVec)
-		} else {
-			return errors.Wrap(err, "failed to register solana rpc counter")
-		}
-	}
-
-	if err := prometheus.Register(rpcErrorCounterVec); err != nil {
-		if e, ok := err.(prometheus.AlreadyRegisteredError); ok {
-			rpcErrorCounterVec = e.ExistingCollector.(*prometheus.CounterVec)
-		} else {
-			return errors.Wrap(err, "failed to register solana rpc error counter")
-		}
-	}
-	return nil
 }
