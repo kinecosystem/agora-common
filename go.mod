@@ -28,6 +28,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.9.0
+	github.com/kinecosystem/agora-api v0.25.0
 	github.com/kinecosystem/go v0.0.0-20191108204735-d6832148266e
 	github.com/lib/pq v1.5.2 // indirect
 	github.com/mr-tron/base58 v1.2.0
