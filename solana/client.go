@@ -581,7 +581,7 @@ func (c *client) GetSignatureStatus(sig Signature, commitment Commitment) (*Sign
 			case CommitmentRecent:
 				return nil
 			case CommitmentSingle:
-				if s.Confirmations == nil || *s.Confirmations >= 2 {
+				if s.Confirmations == nil || *s.Confirmations >= 1 {
 					return nil
 				}
 			case CommitmentMax, CommitmentRoot:
