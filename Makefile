@@ -4,6 +4,10 @@ all: test build
 deps:
 	@go get ./...
 
+.PHONY: deps-clean
+deps-clean:
+	@go mod tidy
+
 .PHONY: build
 build:
 	@./go-build.sh

@@ -12,9 +12,10 @@ require (
 	github.com/aws/aws-sdk-go-v2 v0.17.0
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
-	github.com/coreos/etcd v3.3.25+incompatible
+	github.com/coreos/etcd v3.3.25+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/go-errors/errors v1.0.1 // indirect
 	github.com/go-redis/redis/v7 v7.0.0
@@ -50,6 +51,7 @@ require (
 	google.golang.org/grpc v1.25.1
 	gotest.tools v2.2.0+incompatible // indirect
 	mfycheng.dev/retry v1.1.0
+	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
 // This dependency of stellar/go no longer exists; use a forked version of the repo instead.
