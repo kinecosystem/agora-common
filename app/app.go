@@ -88,6 +88,7 @@ func Run(app App, options ...Option) error {
 	}
 
 	_ = viper.BindEnv("listen_address", "LISTEN_ADDRESS")
+	_ = viper.BindEnv("insecure_listen_address", "INSECURE_LISTEN_ADDRESS")
 	_ = viper.BindEnv("debug_listen_address", "DEBUG_LISTEN_ADDRESS")
 	_ = viper.BindEnv("log_level", "LOG_LEVEL")
 	_ = viper.BindEnv("log_type", "LOG_TYPE")
@@ -151,7 +152,14 @@ func Run(app App, options ...Option) error {
 		}()
 	}
 
+	var secureLis, insecureLis net.Listener
 	var transportCreds credentials.TransportCredentials
+
+	insecureLis, err = net.Listen("tcp", config.InsecureListenAddress)
+	if err != nil {
+		logger.WithError(err).Errorf("failed to listen on %s", config.InsecureListenAddress)
+		os.Exit(1)
+	}
 
 	if config.TLSCertificate != "" {
 		if config.TLSKey == "" {
@@ -178,21 +186,19 @@ func Run(app App, options ...Option) error {
 		}
 
 		transportCreds = credentials.NewServerTLSFromCert(&cert)
+		secureLis, err = net.Listen("tcp", config.ListenAddress)
+		if err != nil {
+			logger.WithError(err).Errorf("failed to listen on %s", config.ListenAddress)
+			os.Exit(1)
+		}
 	}
-
-	// todo: metrics, interceptors, etc
 
 	if err := app.Init(config.AppConfig); err != nil {
 		logger.WithError(err).Error("failed to initialize application")
 		os.Exit(1)
 	}
 
-	lis, err := net.Listen("tcp", config.ListenAddress)
-	if err != nil {
-		logger.WithError(err).Errorf("failed to listen on %s", config.ListenAddress)
-	}
-
-	serv := grpc.NewServer(
+	secureServ := grpc.NewServer(
 		grpc.Creds(transportCreds),
 		grpc_middleware.WithUnaryServerChain(
 			append([]grpc.UnaryServerInterceptor{grpc_prometheus.UnaryServerInterceptor}, opts.unaryServerInterceptors...)...,
@@ -201,49 +207,63 @@ func Run(app App, options ...Option) error {
 			append([]grpc.StreamServerInterceptor{grpc_prometheus.StreamServerInterceptor}, opts.streamServerInterceptors...)...,
 		),
 	)
+	insecureServ := grpc.NewServer(
+		grpc_middleware.WithUnaryServerChain(
+			append([]grpc.UnaryServerInterceptor{grpc_prometheus.UnaryServerInterceptor}, opts.unaryServerInterceptors...)...,
+		),
+		grpc_middleware.WithStreamServerChain(
+			append([]grpc.StreamServerInterceptor{grpc_prometheus.StreamServerInterceptor}, opts.streamServerInterceptors...)...,
+		),
+	)
+	app.RegisterWithGRPC(secureServ)
+	app.RegisterWithGRPC(insecureServ)
+	grpc_prometheus.Register(secureServ)
+	grpc_prometheus.Register(insecureServ)
 
-	app.RegisterWithGRPC(serv)
-	grpc_prometheus.Register(serv)
 	grpc_prometheus.EnableHandlingTimeHistogram(grpc_prometheus.WithHistogramBuckets(metrics.MinuteDistributionBuckets))
 	debugHTTPMux.Handle("/metrics", promhttp.Handler())
 
-	healthgrpc.RegisterHealthServer(serv, health.NewServer())
+	healthgrpc.RegisterHealthServer(secureServ, health.NewServer())
+	healthgrpc.RegisterHealthServer(insecureServ, health.NewServer())
 
-	servShutdownCh := make(chan struct{})
+	secureServShutdownCh := make(chan struct{})
+	inssecureServShutdownCh := make(chan struct{})
+
+	if secureLis != nil {
+		go func() {
+			if err := secureServ.Serve(secureLis); err != nil {
+				logger.WithError(err).Error("grpc serve stopped")
+			} else {
+				logger.Info("grpc server stopped")
+			}
+
+			close(secureServShutdownCh)
+		}()
+	}
 
 	go func() {
-		if err := serv.Serve(lis); err != nil {
+		if err := insecureServ.Serve(insecureLis); err != nil {
 			logger.WithError(err).Error("grpc serve stopped")
 		} else {
 			logger.Info("grpc server stopped")
 		}
 
-		close(servShutdownCh)
+		close(inssecureServShutdownCh)
 	}()
 
 	if opts.httpGatewayEnabled {
 		go func() {
-			var securityOpt grpc.DialOption
-			if config.TLSCertificate != "" {
-				tlsConfig := &tls.Config{
-					InsecureSkipVerify: true,
-				}
-				securityOpt = grpc.WithTransportCredentials(credentials.NewTLS(tlsConfig))
-			} else {
-				securityOpt = grpc.WithInsecure()
-			}
-
 			cc, err := grpc.Dial(
-				lis.Addr().String(),
-				securityOpt,
+				insecureLis.Addr().String(),
+				grpc.WithInsecure(),
 				grpc.WithDefaultCallOptions(grpc.ForceCodec(&httpgateway.BinaryCodec{})),
 			)
 			if err != nil {
-				logger.WithError(err).Errorf("failed to dial %s", lis.Addr().String())
+				logger.WithError(err).Errorf("failed to dial %s", insecureLis.Addr().String())
 				return
 			}
 
-			m := httpgateway.New(serv, cc, opts.httpGatewayOptions...)
+			m := httpgateway.New(secureServ, cc, opts.httpGatewayOptions...)
 			if err := m.ListenAndServeHTTP(config.HTTPGatewayAddress); err != nil {
 				logger.WithError(err).Warn("failed to serve")
 				return
@@ -258,8 +278,10 @@ func Run(app App, options ...Option) error {
 	select {
 	case <-osSigCh:
 		logger.Info("interrupt received, shutting down")
-	case <-servShutdownCh:
-		logger.Info("grpc server shutdown")
+	case <-secureServShutdownCh:
+		logger.Info("secure grpc server shutdown")
+	case <-inssecureServShutdownCh:
+		logger.Info("insecure grpc server shutdown")
 	case <-app.ShutdownChan():
 		logger.Info("app shutdown")
 	}
@@ -269,7 +291,8 @@ func Run(app App, options ...Option) error {
 		// Both the gRPC server and the application should have idempotent
 		// shutdown methods, so it's fine call them both, regardless of the
 		// shutdown condition.
-		serv.GracefulStop()
+		secureServ.GracefulStop()
+		insecureServ.GracefulStop()
 		app.Stop()
 
 		close(shutdownCh)

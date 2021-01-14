@@ -14,8 +14,9 @@ type BaseConfig struct {
 	LogLevel string `mapstructure:"log_level"`
 	LogType  string `mapstructure:"log_type"`
 
-	ListenAddress       string        `mapstructure:"listen_address"`
-	ShutdownGracePeriod time.Duration `mapstructure:"shutdown_grace_period"`
+	ListenAddress         string        `mapstructure:"listen_address"`
+	InsecureListenAddress string        `mapstructure:"insecure_listen_address"`
+	ShutdownGracePeriod   time.Duration `mapstructure:"shutdown_grace_period"`
 
 	HTTPGatewayAddress string `mapstructure:"http_gateway_address"`
 
@@ -45,8 +46,9 @@ type BaseConfig struct {
 var defaultConfig = BaseConfig{
 	LogType: "json",
 
-	ListenAddress:       ":8085",
-	ShutdownGracePeriod: 30 * time.Second,
+	ListenAddress:         ":8085",
+	InsecureListenAddress: "localhost:8086",
+	ShutdownGracePeriod:   30 * time.Second,
 
 	HTTPGatewayAddress: ":8080",
 
