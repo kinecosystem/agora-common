@@ -7,6 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/kinecosystem/agora-common/retry/backoff"
 )
@@ -105,6 +107,34 @@ func TestBackoffWithJitter(t *testing.T) {
 		float64(sleeperImpl.(*testSleeper).AbsDeviation()),
 		0.05*0.05*float64(delay), // accurate within 5%
 	)
+}
+
+func TestRetriableGRPCCodes(t *testing.T) {
+	retriableCodes := []codes.Code{
+		codes.Internal,
+		codes.ResourceExhausted,
+		codes.Unavailable,
+	}
+
+	strategy := RetriableGRPCCodes(retriableCodes...)
+	for _, c := range retriableCodes {
+		assert.True(t, strategy(1, status.Error(c, "msg")))
+	}
+	assert.False(t, strategy(2, status.Error(codes.FailedPrecondition, "msg")))
+}
+
+func TestNonRetriableGRPCCodes(t *testing.T) {
+	nonRetriableCodes := []codes.Code{
+		codes.InvalidArgument,
+		codes.NotFound,
+		codes.AlreadyExists,
+	}
+
+	strategy := NonRetriableGRPCCodes(nonRetriableCodes...)
+	for _, c := range nonRetriableCodes {
+		assert.False(t, strategy(1, status.Error(c, "msg")))
+	}
+	assert.True(t, strategy(1, status.Error(codes.Internal, "msg")))
 }
 
 type testSleeper struct {

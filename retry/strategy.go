@@ -6,6 +6,9 @@ import (
 	"math/rand"
 	"time"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/kinecosystem/agora-common/retry/backoff"
 )
 
@@ -75,6 +78,34 @@ func BackoffWithJitter(strategy backoff.Strategy, maxBackoff time.Duration, jitt
 		//      jitter           jitter
 		cappedDelayWithJitter := time.Duration(float64(cappedDelay) * (1 + (rand.Float64()*jitter*2 - jitter)))
 		sleeperImpl.Sleep(cappedDelayWithJitter)
+		return true
+	}
+}
+
+// RetriableGRPCCodes returns a strategy that specifies which GRPC status codes can be retried.
+func RetriableGRPCCodes(retriableCodes ...codes.Code) Strategy {
+	return func(attempts uint, err error) bool {
+		code := status.Code(err)
+		for _, c := range retriableCodes {
+			if code == c {
+				return true
+			}
+		}
+
+		return false
+	}
+}
+
+// NonRetriableGRPCCodes returns a strategy that specifies which GRPC status codes should not be retried.
+func NonRetriableGRPCCodes(nonRetriableCodes ...codes.Code) Strategy {
+	return func(attempts uint, err error) bool {
+		code := status.Code(err)
+		for _, c := range nonRetriableCodes {
+			if code == c {
+				return false
+			}
+		}
+
 		return true
 	}
 }
