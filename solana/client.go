@@ -99,12 +99,35 @@ type AccountInfo struct {
 	Executable bool
 }
 
+const (
+	confirmationStatusProcessed = "processed"
+	confirmationStatusConfirmed = "confirmed"
+	confirmationStatusFinalized = "finalized"
+)
+
 type SignatureStatus struct {
 	Slot        uint64
 	ErrorResult *TransactionError
 
 	// Confirmations will be nil if the transaction has been rooted.
-	Confirmations *int
+	Confirmations      *int
+	ConfirmationStatus string
+}
+
+func (s SignatureStatus) Confirmed() bool {
+	if s.Finalized() {
+		return true
+	}
+
+	if s.ConfirmationStatus == confirmationStatusConfirmed {
+		return true
+	}
+
+	return *s.Confirmations >= 1
+}
+
+func (s SignatureStatus) Finalized() bool {
+	return s.Confirmations == nil || s.ConfirmationStatus == confirmationStatusFinalized
 }
 
 type Block struct {
@@ -581,11 +604,11 @@ func (c *client) GetSignatureStatus(sig Signature, commitment Commitment) (*Sign
 			case CommitmentRecent:
 				return nil
 			case CommitmentSingle:
-				if s.Confirmations == nil || *s.Confirmations >= 1 {
+				if s.Confirmed() {
 					return nil
 				}
 			case CommitmentMax, CommitmentRoot:
-				if s.Confirmations == nil {
+				if s.Finalized() {
 					return nil
 				}
 			}
@@ -615,9 +638,10 @@ func (c *client) GetSignatureStatuses(sigs []Signature) ([]*SignatureStatus, err
 	}
 
 	type signatureStatus struct {
-		Slot          uint64          `json:"slot"`
-		Confirmations *int            `json:"confirmations"`
-		Err           json.RawMessage `json:"err"`
+		Slot               uint64          `json:"slot"`
+		Confirmations      *int            `json:"confirmations"`
+		ConfirmationStatus string          `json:"confirmationStatus"`
+		Err                json.RawMessage `json:"err"`
 	}
 
 	type rpcResp struct {
@@ -640,6 +664,7 @@ func (c *client) GetSignatureStatuses(sigs []Signature) ([]*SignatureStatus, err
 
 		statuses[i] = &SignatureStatus{}
 		statuses[i].Confirmations = v.Confirmations
+		statuses[i].ConfirmationStatus = v.ConfirmationStatus
 		statuses[i].Slot = v.Slot
 
 		if len(v.Err) > 0 {
