@@ -36,8 +36,7 @@ func TestConfigDoesntExist(t *testing.T) {
 	require.NoError(t, err)
 	defer closeFunc()
 
-	c, err := NewConfig(client, name)
-	require.NoError(t, err)
+	c := NewConfig(client, name)
 	defer c.Shutdown()
 
 	// No data is set in etcd, so a no value error should be returned
@@ -56,8 +55,8 @@ func TestConfigOverridden(t *testing.T) {
 
 	require.NoError(t, SetBytesConfig(context.Background(), client, name, initialValue))
 
-	c, err := NewConfig(client, name)
-	require.NoError(t, err)
+	c := NewConfig(client, name)
+	time.Sleep(500 * time.Millisecond)
 
 	value, err := c.Get(context.Background())
 	require.NoError(t, err)
