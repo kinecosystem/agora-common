@@ -19,6 +19,10 @@ const (
 	KinVersion4
 )
 
+func (k KinVersion) String() string {
+	return strconv.FormatInt(int64(k), 10)
+}
+
 const (
 	KinVersionHeader        = "kin-version"
 	DesiredKinVersionHeader = "desired-kin-version"
