@@ -24,6 +24,18 @@ type Config interface {
 	Shutdown()
 }
 
+// NoopConfig is a config that does not yield any values.
+var NoopConfig = &noopConfig{}
+
+type noopConfig struct{}
+
+func (*noopConfig) Get(_ context.Context) (interface{}, error) {
+	return nil, ErrNoValue
+}
+
+func (*noopConfig) Shutdown() {
+}
+
 // Bool provides a boolean typed config.Config.
 type Bool interface {
 	Get(ctx context.Context) bool
