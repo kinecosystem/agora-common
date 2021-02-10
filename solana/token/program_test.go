@@ -51,7 +51,7 @@ func TestInitializeAccount(t *testing.T) {
 	assert.Equal(t, solana.ErrIncorrectProgram, err)
 }
 
-func TestTestAuthority(t *testing.T) {
+func TestSetAuthority(t *testing.T) {
 	keys := generateKeys(t, 3)
 
 	instruction := SetAuthority(keys[0], keys[1], keys[2], AuthorityTypeCloseAccount)
@@ -73,16 +73,7 @@ func TestTestAuthority(t *testing.T) {
 	assert.Equal(t, AuthorityTypeCloseAccount, decompiled.Type)
 
 	// Mess with the instruction for validation
-	instruction.Data = instruction.Data[:len(instruction.Data)-2]
-	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
-	assert.NotNil(t, err)
-	assert.True(t, strings.Contains(err.Error(), "invalid data size"))
-
-	instruction.Data[0] = byte(commandApprove)
-	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
-	assert.Equal(t, solana.ErrIncorrectInstruction, err)
-
-	instruction.Data = instruction.Data[:2]
+	instruction.Data = instruction.Data[:len(instruction.Data)-1]
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "invalid data size"))
@@ -92,12 +83,16 @@ func TestTestAuthority(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
 
+	instruction.Data[0] = byte(commandApprove)
+	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+
 	instruction.Program = keys[0]
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectProgram, err)
 }
 
-func TestTestAuthority_NoNewAuthority(t *testing.T) {
+func TestSetAuthority_NoNewAuthority(t *testing.T) {
 	keys := generateKeys(t, 3)
 
 	instruction := SetAuthority(keys[0], keys[1], nil, AuthorityTypeCloseAccount)
@@ -123,26 +118,21 @@ func TestTestAuthority_NoNewAuthority(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "invalid data size"))
 
-	instruction.Data[0] = byte(commandApprove)
-	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
-	assert.Equal(t, solana.ErrIncorrectInstruction, err)
-
-	instruction.Data = instruction.Data[:2]
-	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
-	assert.NotNil(t, err)
-	assert.True(t, strings.Contains(err.Error(), "invalid data size"))
-
 	instruction.Accounts = instruction.Accounts[:1]
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
+
+	instruction.Data[0] = byte(commandApprove)
+	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
 	instruction.Program = keys[0]
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectProgram, err)
 }
 
-func TestTestAuthority_Multisig(t *testing.T) {
+func TestSetAuthority_Multisig(t *testing.T) {
 	keys := generateKeys(t, 5)
 
 	instruction := SetAuthorityMultisig(keys[0], keys[1], keys[2], AuthorityTypeCloseAccount, keys[3:])
@@ -169,19 +159,14 @@ func TestTestAuthority_Multisig(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "invalid data size"))
 
-	instruction.Data[0] = byte(commandApprove)
-	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
-	assert.Equal(t, solana.ErrIncorrectInstruction, err)
-
-	instruction.Data = instruction.Data[:2]
-	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
-	assert.NotNil(t, err)
-	assert.True(t, strings.Contains(err.Error(), "invalid data size"))
-
 	instruction.Accounts = instruction.Accounts[:1]
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
+
+	instruction.Data[0] = byte(commandApprove)
+	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
 	instruction.Program = keys[0]
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)

@@ -252,14 +252,14 @@ func DecompileSetAuthority(m solana.Message, index int) (*DecompiledSetAuthority
 	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey) {
 		return nil, solana.ErrIncorrectProgram
 	}
+	if i.Data[0] != byte(commandSetAuthority) {
+		return nil, solana.ErrIncorrectInstruction
+	}
 	if len(i.Accounts) < 2 {
 		return nil, errors.Errorf("invalid number of accounts: %d", len(i.Accounts))
 	}
 	if len(i.Data) < 3 {
 		return nil, errors.Errorf("invalid data size: %d (expect at least 3)", len(i.Data))
-	}
-	if i.Data[0] != byte(commandSetAuthority) {
-		return nil, solana.ErrIncorrectInstruction
 	}
 	if i.Data[2] == 0 && len(i.Data) != 3 {
 		return nil, errors.Errorf("invalid data size: %d (expect 3)", len(i.Data))
