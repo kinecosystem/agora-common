@@ -36,6 +36,9 @@ const (
 
 	// Reference: https://github.com/solana-labs/solana/blob/14d793b22c1571fb092d5822189d5b64f32605e6/client/src/rpc_custom_error.rs#L10
 	blockNotAvailableCode = -32004
+
+	// Reference: https://github.com/solana-labs/solana/blob/71e9958e061493d7545bd28d4ac7a85aaed6ffbb/client/src/rpc_custom_error.rs#L11
+	rpcNodeUnhealthyCode = -32005
 )
 
 var (
@@ -230,7 +233,7 @@ func (c *client) call(out interface{}, method string, params ...interface{}) err
 		if rpcErr.Code == 429 {
 			return errRateLimited
 		}
-		if rpcErr.Code >= 500 {
+		if rpcErr.Code >= 500 || rpcErr.Code == rpcNodeUnhealthyCode {
 			return errServiceError
 		}
 
