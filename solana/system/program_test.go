@@ -76,7 +76,7 @@ func TestAdvanceNonceAccount(t *testing.T) {
 	command := make([]byte, 4)
 	binary.LittleEndian.PutUint32(command, commandAdvanceNonceAccount)
 	assert.EqualValues(t, command, instruction.Data)
-	assert.EqualValues(t, programKey[:], instruction.Program)
+	assert.EqualValues(t, ProgramKey[:], instruction.Program)
 
 	require.Len(t, instruction.Accounts, 3)
 
@@ -96,7 +96,7 @@ func TestGetNonceValue(t *testing.T) {
 	// lay
 	info := solana.AccountInfo{
 		Data:  make([]byte, 80),
-		Owner: programKey[:],
+		Owner: ProgramKey[:],
 	}
 
 	var val solana.Blockhash

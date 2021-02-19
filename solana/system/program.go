@@ -10,7 +10,7 @@ import (
 	"github.com/kinecosystem/agora-common/solana"
 )
 
-var programKey [32]byte
+var ProgramKey [32]byte
 
 const (
 	commandCreateAccount uint32 = iota
@@ -61,7 +61,7 @@ func CreateAccount(funder, address, owner ed25519.PublicKey, lamports, size uint
 	copy(data[4+2*8:], owner)
 
 	return solana.NewInstruction(
-		programKey[:],
+		ProgramKey[:],
 		data,
 		solana.NewAccountMeta(funder, true),
 		solana.NewAccountMeta(address, true),
@@ -84,7 +84,7 @@ func DecompileCreateAccount(m solana.Message, index int) (*DecompiledCreateAccou
 
 	i := m.Instructions[index]
 
-	if !bytes.Equal(m.Accounts[i.ProgramIndex], programKey[:]) {
+	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey[:]) {
 		return nil, solana.ErrIncorrectProgram
 	}
 	if len(i.Accounts) != 2 {
@@ -119,7 +119,7 @@ func AdvanceNonce(account, authority ed25519.PublicKey) solana.Instruction {
 	binary.LittleEndian.PutUint32(data, commandAdvanceNonceAccount)
 
 	return solana.NewInstruction(
-		programKey[:],
+		ProgramKey[:],
 		data,
 		solana.NewAccountMeta(account, true),
 		solana.NewReadonlyAccountMeta(RecentBlockhashesSysVar, false),
@@ -136,7 +136,7 @@ func GetNonceValueFromAccount(info solana.AccountInfo) (val solana.Blockhash, er
 	if len(info.Data) != 80 {
 		return val, errors.Errorf("invalid nonce account size: %d", len(info.Data))
 	}
-	if !bytes.Equal(info.Owner, programKey[:]) {
+	if !bytes.Equal(info.Owner, ProgramKey[:]) {
 		return val, errors.Errorf("invalid nonce account (not owned by sys program)")
 	}
 

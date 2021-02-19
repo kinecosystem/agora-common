@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-go v3.4.1+incompatible
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
-	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412 // indirect
+	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412
 	github.com/aws/aws-sdk-go v1.25.25
 	github.com/aws/aws-sdk-go-v2 v0.17.0
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
