@@ -13,6 +13,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestGetCommand_Error(t *testing.T) {
+	keys := generateKeys(t, 4)
+
+	// invalid program
+	cmd, err := GetCommand(solana.NewTransaction(keys[0], solana.NewInstruction(keys[1], []byte{})).Message, 0)
+	assert.Equal(t, CommandUnknown, cmd)
+	assert.Equal(t, solana.ErrIncorrectProgram, err)
+
+	// no data
+	cmd, err = GetCommand(solana.NewTransaction(keys[0], solana.NewInstruction(ProgramKey, []byte{})).Message, 0)
+	assert.Equal(t, CommandUnknown, cmd)
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "missing data")
+}
+
 func TestInitializeAccount(t *testing.T) {
 	keys := generateKeys(t, 4)
 
@@ -32,6 +47,10 @@ func TestInitializeAccount(t *testing.T) {
 	assert.Equal(t, keys[1], decompiled.Mint)
 	assert.Equal(t, keys[2], decompiled.Owner)
 
+	cmd, err := GetCommand(solana.NewTransaction(keys[0], instruction).Message, 0)
+	require.NoError(t, err)
+	assert.Equal(t, CommandInitializeAccount, cmd)
+
 	instruction.Accounts[3].PublicKey = keys[3]
 	_, err = DecompileInitializeAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.NotNil(t, err)
@@ -42,7 +61,7 @@ func TestInitializeAccount(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
 
-	instruction.Data[0] = byte(commandTransfer)
+	instruction.Data[0] = byte(CommandTransfer)
 	_, err = DecompileInitializeAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
@@ -72,6 +91,10 @@ func TestSetAuthority(t *testing.T) {
 	assert.Equal(t, keys[2], decompiled.NewAuthority)
 	assert.Equal(t, AuthorityTypeCloseAccount, decompiled.Type)
 
+	cmd, err := GetCommand(solana.NewTransaction(keys[0], instruction).Message, 0)
+	require.NoError(t, err)
+	assert.Equal(t, CommandSetAuthority, cmd)
+
 	// Mess with the instruction for validation
 	instruction.Data = instruction.Data[:len(instruction.Data)-1]
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
@@ -83,7 +106,7 @@ func TestSetAuthority(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
 
-	instruction.Data[0] = byte(commandApprove)
+	instruction.Data[0] = byte(CommandApprove)
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
@@ -123,7 +146,7 @@ func TestSetAuthority_NoNewAuthority(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
 
-	instruction.Data[0] = byte(commandApprove)
+	instruction.Data[0] = byte(CommandApprove)
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
@@ -164,7 +187,7 @@ func TestSetAuthority_Multisig(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
 
-	instruction.Data[0] = byte(commandApprove)
+	instruction.Data[0] = byte(CommandApprove)
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
@@ -207,6 +230,10 @@ func TestTransfer(t *testing.T) {
 	assert.Equal(t, keys[1], decompiled.Destination)
 	assert.Equal(t, keys[2], decompiled.Owner)
 
+	cmd, err := GetCommand(solana.NewTransaction(keys[0], instruction).Message, 0)
+	require.NoError(t, err)
+	assert.Equal(t, CommandTransfer, cmd)
+
 	instruction.Data = instruction.Data[:1]
 	_, err = DecompileTransferAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.NotNil(t, err)
@@ -217,7 +244,7 @@ func TestTransfer(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
 
-	instruction.Data[0] = byte(commandApprove)
+	instruction.Data[0] = byte(CommandApprove)
 	_, err = DecompileTransferAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
@@ -259,6 +286,10 @@ func TestTransferMultisig(t *testing.T) {
 	assert.Equal(t, keys[1], decompiled.Destination)
 	assert.Equal(t, keys[2], decompiled.Owner)
 
+	cmd, err := GetCommand(solana.NewTransaction(keys[0], instruction).Message, 0)
+	require.NoError(t, err)
+	assert.Equal(t, CommandTransfer, cmd)
+
 	instruction.Data = instruction.Data[:1]
 	_, err = DecompileTransferAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.NotNil(t, err)
@@ -269,7 +300,7 @@ func TestTransferMultisig(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
 
-	instruction.Data[0] = byte(commandApprove)
+	instruction.Data[0] = byte(CommandApprove)
 	_, err = DecompileTransferAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
@@ -282,7 +313,11 @@ func TestCloseAccount(t *testing.T) {
 	keys := generateKeys(t, 3)
 
 	instruction := CloseAccount(keys[0], keys[1], keys[2])
-	assert.Equal(t, []byte{9}, instruction.Data)
+	assert.Equal(t, []byte{byte(CommandCloseAccount)}, instruction.Data)
+
+	cmd, err := GetCommand(solana.NewTransaction(keys[0], instruction).Message, 0)
+	require.NoError(t, err)
+	assert.Equal(t, CommandCloseAccount, cmd)
 
 	assert.False(t, instruction.Accounts[0].IsSigner)
 	assert.True(t, instruction.Accounts[0].IsWritable)

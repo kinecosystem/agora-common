@@ -91,6 +91,7 @@ func (t *testCtor) BlockSize() int {
 
 func TestCreateProgramAddress_Invalid(t *testing.T) {
 	pub, _, err := ed25519.GenerateKey(nil)
+	require.NoError(t, err)
 	programHashCtor = func() hash.Hash {
 		return &testCtor{
 			sumResult: pub,

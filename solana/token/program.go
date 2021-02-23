@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"encoding/binary"
+	"math"
 
 	"github.com/pkg/errors"
 
@@ -18,38 +19,38 @@ import (
 // todo: lock this in, or make configurable.
 var ProgramKey = ed25519.PublicKey{6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140, 245, 133, 126, 255, 0, 169}
 
-type command byte
+type Command byte
 
 const (
 	// nolint:varcheck,deadcode,unused
-	commandInitializeMint command = iota
-	commandInitializeAccount
+	CommandInitializeMint Command = iota
+	CommandInitializeAccount
+	CommandInitializeMultisig
+	CommandTransfer
 	// nolint:varcheck,deadcode,unused
-	commandInitializeMultisig
-	commandTransfer
+	CommandApprove
 	// nolint:varcheck,deadcode,unused
-	commandApprove
+	CommandRevoke
+	CommandSetAuthority
 	// nolint:varcheck,deadcode,unused
-	commandRevoke
-	commandSetAuthority
+	CommandMintTo
 	// nolint:varcheck,deadcode,unused
-	commandMintTo
+	CommandBurn
+	CommandCloseAccount
 	// nolint:varcheck,deadcode,unused
-	commandBurn
+	CommandFreezeAccount
 	// nolint:varcheck,deadcode,unused
-	commandCloseAccount
+	CommandThawAccount
 	// nolint:varcheck,deadcode,unused
-	commandFreezeAccount
+	CommandTransfer2
 	// nolint:varcheck,deadcode,unused
-	commandThawAccount
+	CommandApprove2
 	// nolint:varcheck,deadcode,unused
-	commandTransfer2
+	CommandMintTo2
 	// nolint:varcheck,deadcode,unused
-	commandApprove2
-	// nolint:varcheck,deadcode,unused
-	commandMintTo2
-	// nolint:varcheck,deadcode,unused
-	commandBurn2
+	CommandBurn2
+
+	CommandUnknown = Command(math.MaxUint8)
 )
 
 const (
@@ -93,6 +94,23 @@ const (
 	ErrorMintDecimalsMismatch
 )
 
+func GetCommand(m solana.Message, index int) (Command, error) {
+	if index >= len(m.Instructions) {
+		return CommandUnknown, errors.Errorf("instruction doesn't exist at %d", index)
+	}
+
+	i := m.Instructions[index]
+
+	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey) {
+		return CommandUnknown, solana.ErrIncorrectProgram
+	}
+	if len(i.Data) == 0 {
+		return CommandUnknown, errors.New("token instruction missing data")
+	}
+
+	return Command(i.Data[0]), nil
+}
+
 // Reference: https://github.com/solana-labs/solana-program-library/blob/b011698251981b5a12088acba18fad1d41c3719a/token/program/src/instruction.rs#L41-L55
 func InitializeAccount(account, mint, owner ed25519.PublicKey) solana.Instruction {
 	// Accounts expected by this instruction:
@@ -103,7 +121,7 @@ func InitializeAccount(account, mint, owner ed25519.PublicKey) solana.Instructio
 	//   3. `[]` Rent sysvar
 	return solana.NewInstruction(
 		ProgramKey,
-		[]byte{byte(commandInitializeAccount)},
+		[]byte{byte(CommandInitializeAccount)},
 		solana.NewAccountMeta(account, true),
 		solana.NewReadonlyAccountMeta(mint, false),
 		solana.NewReadonlyAccountMeta(owner, false),
@@ -127,7 +145,7 @@ func DecompileInitializeAccount(m solana.Message, index int) (*DecompiledInitial
 	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey) {
 		return nil, solana.ErrIncorrectProgram
 	}
-	if !bytes.Equal([]byte{byte(commandInitializeAccount)}, i.Data) {
+	if !bytes.Equal([]byte{byte(CommandInitializeAccount)}, i.Data) {
 		return nil, solana.ErrIncorrectInstruction
 	}
 	if len(i.Accounts) != 4 {
@@ -160,7 +178,7 @@ func InitializeMultisig(account ed25519.PublicKey, requiredSigners byte, signers
 
 	return solana.NewInstruction(
 		ProgramKey,
-		[]byte{byte(commandInitializeMultisig), requiredSigners},
+		[]byte{byte(CommandInitializeMultisig), requiredSigners},
 		accounts...,
 	)
 }
@@ -188,7 +206,7 @@ func SetAuthority(account, currentAuthority, newAuthority ed25519.PublicKey, aut
 	//   0. `[writable]` The mint or account to change the authority of.
 	//   1. `[]` The mint's or account's multisignature authority.
 	//   2. ..2+M `[signer]` M signer accounts
-	data := []byte{byte(commandSetAuthority), byte(authorityType), 0}
+	data := []byte{byte(CommandSetAuthority), byte(authorityType), 0}
 	if len(newAuthority) > 0 {
 		data[2] = 1
 		data = append(data, newAuthority...)
@@ -215,7 +233,7 @@ func SetAuthorityMultisig(account, multisigOwner, newAuthority ed25519.PublicKey
 	//   0. `[writable]` The mint or account to change the authority of.
 	//   1. `[]` The mint's or account's multisignature authority.
 	//   2. ..2+M `[signer]` M signer accounts
-	data := []byte{byte(commandSetAuthority), byte(authorityType), 0}
+	data := []byte{byte(CommandSetAuthority), byte(authorityType), 0}
 	if len(newAuthority) > 0 {
 		data[2] = 1
 		data = append(data, newAuthority...)
@@ -252,7 +270,7 @@ func DecompileSetAuthority(m solana.Message, index int) (*DecompiledSetAuthority
 	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey) {
 		return nil, solana.ErrIncorrectProgram
 	}
-	if i.Data[0] != byte(commandSetAuthority) {
+	if i.Data[0] != byte(CommandSetAuthority) {
 		return nil, solana.ErrIncorrectInstruction
 	}
 	if len(i.Accounts) < 2 {
@@ -298,7 +316,7 @@ func Transfer(source, dest, owner ed25519.PublicKey, amount uint64) solana.Instr
 	//   2. `[]` The source account's multisignature owner/delegate.
 	//   3. ..3+M `[signer]` M signer accounts.
 	data := make([]byte, 1+8)
-	data[0] = byte(commandTransfer)
+	data[0] = byte(CommandTransfer)
 	binary.LittleEndian.PutUint64(data[1:], amount)
 
 	return solana.NewInstruction(
@@ -324,7 +342,7 @@ func TransferMultisig(source, dest, multisigOwner ed25519.PublicKey, amount uint
 	//   2. `[]` The source account's multisignature owner/delegate.
 	//   3. ..3+M `[signer]` M signer accounts.
 	data := make([]byte, 1+8)
-	data[0] = byte(commandTransfer)
+	data[0] = byte(CommandTransfer)
 	binary.LittleEndian.PutUint64(data[1:], amount)
 
 	accounts := make([]solana.AccountMeta, 3+len(signers))
@@ -359,7 +377,7 @@ func DecompileTransferAccount(m solana.Message, index int) (*DecompiledTransferA
 	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey) {
 		return nil, solana.ErrIncorrectProgram
 	}
-	if len(i.Data) == 0 || i.Data[0] != byte(commandTransfer) {
+	if len(i.Data) == 0 || i.Data[0] != byte(CommandTransfer) {
 		return nil, solana.ErrIncorrectInstruction
 	}
 	// note: we do < 3 instead of != 3 in order to support multisig cases.
@@ -398,7 +416,7 @@ func CloseAccount(account, dest, owner ed25519.PublicKey) solana.Instruction {
 	//   3. ..3+M `[signer]` M signer accounts.
 	return solana.NewInstruction(
 		ProgramKey,
-		[]byte{byte(commandCloseAccount)},
+		[]byte{byte(CommandCloseAccount)},
 		solana.NewAccountMeta(account, false),
 		solana.NewAccountMeta(dest, false),
 		solana.NewReadonlyAccountMeta(owner, true),
