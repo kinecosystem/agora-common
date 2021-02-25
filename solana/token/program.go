@@ -360,14 +360,14 @@ func TransferMultisig(source, dest, multisigOwner ed25519.PublicKey, amount uint
 	)
 }
 
-type DecompiledTransferAccount struct {
+type DecompiledTransfer struct {
 	Source      ed25519.PublicKey
 	Destination ed25519.PublicKey
 	Owner       ed25519.PublicKey
 	Amount      uint64
 }
 
-func DecompileTransferAccount(m solana.Message, index int) (*DecompiledTransferAccount, error) {
+func DecompileTransfer(m solana.Message, index int) (*DecompiledTransfer, error) {
 	if index >= len(m.Instructions) {
 		return nil, errors.Errorf("instruction doesn't exist at %d", index)
 	}
@@ -388,7 +388,7 @@ func DecompileTransferAccount(m solana.Message, index int) (*DecompiledTransferA
 		return nil, errors.Errorf("invalid instruction data size: %d", len(i.Data))
 	}
 
-	v := &DecompiledTransferAccount{
+	v := &DecompiledTransfer{
 		Source:      m.Accounts[i.Accounts[0]],
 		Destination: m.Accounts[i.Accounts[1]],
 		Owner:       m.Accounts[i.Accounts[2]],
@@ -421,4 +421,36 @@ func CloseAccount(account, dest, owner ed25519.PublicKey) solana.Instruction {
 		solana.NewAccountMeta(dest, false),
 		solana.NewReadonlyAccountMeta(owner, true),
 	)
+}
+
+type DecompiledCloseAccount struct {
+	Account     ed25519.PublicKey
+	Destination ed25519.PublicKey
+	Owner       ed25519.PublicKey
+}
+
+func DecompileCloseAccount(m solana.Message, index int) (*DecompiledCloseAccount, error) {
+	if index >= len(m.Instructions) {
+		return nil, errors.Errorf("instruction doesn't exist at %d", index)
+	}
+
+	i := m.Instructions[index]
+
+	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey) {
+		return nil, solana.ErrIncorrectProgram
+	}
+	if len(i.Data) != 1 || i.Data[0] != byte(CommandCloseAccount) {
+		return nil, solana.ErrIncorrectInstruction
+	}
+	// note: we do < 3 instead of != 3 in order to support multisig cases.
+	if len(i.Accounts) < 3 {
+		return nil, errors.Errorf("invalid number of accounts: %d", len(i.Accounts))
+	}
+
+	v := &DecompiledCloseAccount{
+		Account:     m.Accounts[i.Accounts[0]],
+		Destination: m.Accounts[i.Accounts[1]],
+		Owner:       m.Accounts[i.Accounts[2]],
+	}
+	return v, nil
 }
