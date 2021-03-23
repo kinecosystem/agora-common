@@ -10,8 +10,6 @@ import (
 // Request contains the body of a sign transaction request.
 type Request struct {
 	KinVersion int `json:"kin_version"`
-	// EnvelopeXDR is a base64-encoded transaction envelope XDR
-	EnvelopeXDR []byte `json:"envelope_xdr"`
 	// SolanaTransaction is a base64-encoded Solana transaction
 	SolanaTransaction []byte `json:"solana_transaction"`
 	// InvoiceList is a base64-encoded protobuf InvoiceList
@@ -28,6 +26,12 @@ const (
 type SuccessResponse struct {
 	// EnvelopeXDR is a base64-encoded transaction envelope XDR
 	EnvelopeXDR []byte `json:"envelope_xdr"`
+
+	// Signature is a base64-encoded transaction signature.
+	//
+	// The endpoint may or may not have provided a signature based on the
+	// provided transaction.
+	Signature []byte
 }
 
 // ForbiddenResponse represents a 403 Forbidden response to a sign transaction request.

@@ -6,6 +6,9 @@ import (
 	"github.com/mr-tron/base58/base58"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/kinecosystem/agora-common/solana"
+	"github.com/kinecosystem/agora-common/solana/system"
 )
 
 func TestGetAssociatedAccount(t *testing.T) {
@@ -20,4 +23,36 @@ func TestGetAssociatedAccount(t *testing.T) {
 	actual, err := GetAssociatedAccount(wallet, mint)
 	require.NoError(t, err)
 	assert.EqualValues(t, addr, actual)
+}
+
+func TestCreateAssociatedAccount(t *testing.T) {
+	keys := generateKeys(t, 3)
+
+	expectedAddr, err := GetAssociatedAccount(keys[1], keys[2])
+	require.NoError(t, err)
+
+	instruction, addr, err := CreateAssociatedTokenAccount(keys[0], keys[1], keys[2])
+	require.NoError(t, err)
+	assert.Equal(t, expectedAddr, addr)
+
+	assert.Empty(t, instruction.Data)
+	assert.Equal(t, 7, len(instruction.Accounts))
+	assert.True(t, instruction.Accounts[0].IsSigner)
+	assert.True(t, instruction.Accounts[0].IsWritable)
+	assert.False(t, instruction.Accounts[1].IsSigner)
+	assert.True(t, instruction.Accounts[1].IsWritable)
+	for i := 2; i < len(instruction.Accounts); i++ {
+		assert.False(t, instruction.Accounts[i].IsSigner)
+		assert.False(t, instruction.Accounts[i].IsWritable)
+	}
+
+	assert.EqualValues(t, system.ProgramKey[:], instruction.Accounts[4].PublicKey)
+	assert.EqualValues(t, ProgramKey, instruction.Accounts[5].PublicKey)
+	assert.EqualValues(t, system.RentSysVar, instruction.Accounts[6].PublicKey)
+
+	decompiled, err := DecompileCreateAssociatedAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, keys[0], decompiled.Subsidizer)
+	assert.Equal(t, keys[1], decompiled.Owner)
+	assert.Equal(t, keys[2], decompiled.Mint)
 }

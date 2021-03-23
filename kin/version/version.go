@@ -28,7 +28,7 @@ const (
 	DesiredKinVersionHeader = "desired-kin-version"
 	minVersion              = KinVersion2
 	maxVersion              = KinVersion4
-	defaultVersion          = KinVersion3
+	defaultVersion          = KinVersion4
 )
 
 // GetCtxKinVersion determines which version of Kin to use based on the headers in the provided context.

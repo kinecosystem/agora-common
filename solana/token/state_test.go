@@ -1,6 +1,7 @@
 package token
 
 import (
+	"crypto/ed25519"
 	"encoding/hex"
 	"testing"
 
@@ -26,4 +27,38 @@ func TestUnmarshal(t *testing.T) {
 	var rtt Account
 	rtt.Unmarshal(a.Marshal())
 	assert.Equal(t, a, rtt)
+}
+
+func TestRoundTrip(t *testing.T) {
+	mint := make(ed25519.PublicKey, ed25519.PublicKeySize)
+	for i := 0; i < len(mint); i++ {
+		mint[i] = 1
+	}
+	owner := make(ed25519.PublicKey, ed25519.PublicKeySize)
+	for i := 0; i < len(owner); i++ {
+		owner[i] = 2
+	}
+	delegate := make(ed25519.PublicKey, ed25519.PublicKeySize)
+	for i := 0; i < len(delegate); i++ {
+		delegate[i] = 3
+	}
+	closeAuthority := make(ed25519.PublicKey, ed25519.PublicKeySize)
+	for i := 0; i < len(closeAuthority); i++ {
+		closeAuthority[i] = 2
+	}
+
+	isNative := uint64(2)
+	expected := Account{
+		Mint:           mint,
+		Owner:          owner,
+		Amount:         10,
+		Delegate:       delegate,
+		State:          AccountStateFrozen,
+		IsNative:       &isNative,
+		CloseAuthority: closeAuthority,
+	}
+
+	var actual Account
+	require.True(t, actual.Unmarshal(expected.Marshal()))
+	assert.Equal(t, expected, actual)
 }

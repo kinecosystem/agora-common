@@ -114,8 +114,8 @@ func (t *Transaction) Signature() []byte {
 func (t *Transaction) String() string {
 	var sb strings.Builder
 	sb.WriteString("Signatures:\n")
-	for _, s := range t.Signatures {
-		sb.WriteString(fmt.Sprintf("  %s\n", base58.Encode(s[:])))
+	for i, s := range t.Signatures {
+		sb.WriteString(fmt.Sprintf("  %d: %s\n", i, base58.Encode(s[:])))
 	}
 	sb.WriteString("Message:\n")
 	sb.WriteString("  Header:\n")
@@ -123,8 +123,8 @@ func (t *Transaction) String() string {
 	sb.WriteString(fmt.Sprintf("    NumReadOnly: %d\n", t.Message.Header.NumReadOnly))
 	sb.WriteString(fmt.Sprintf("    NumReadOnlySigned: %d\n", t.Message.Header.NumReadonlySigned))
 	sb.WriteString("  Accounts:\n")
-	for _, a := range t.Message.Accounts {
-		sb.WriteString(fmt.Sprintf("    %s\n", base58.Encode(a)))
+	for i, a := range t.Message.Accounts {
+		sb.WriteString(fmt.Sprintf("    %d: %s\n", i, base58.Encode(a)))
 	}
 	sb.WriteString("  Instructions:\n")
 	for i := range t.Message.Instructions {

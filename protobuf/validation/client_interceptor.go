@@ -21,7 +21,7 @@ func UnaryClientInterceptor() grpc.UnaryClientInterceptor {
 		if v, ok := req.(Validator); ok {
 			if err := v.Validate(); err != nil {
 				// Log warn since the caller is at fault.
-				log.WithField("request", req).Warn("dropping invalid request")
+				log.WithError(err).Warn("dropping invalid request")
 				return status.Errorf(codes.InvalidArgument, err.Error())
 			}
 		}
@@ -35,7 +35,7 @@ func UnaryClientInterceptor() grpc.UnaryClientInterceptor {
 		if v, ok := reply.(Validator); ok {
 			if err := v.Validate(); err != nil {
 				// Just log debug here since the outbound service is mis-behaving.
-				log.WithField("response", reply).Debug("dropping invalid response")
+				log.WithError(err).Debug("dropping invalid response")
 				return status.Errorf(codes.Internal, err.Error())
 			}
 		}
@@ -73,7 +73,7 @@ func (c *clientStreamWrapper) SendMsg(req interface{}) error {
 	if v, ok := req.(Validator); ok {
 		if err := v.Validate(); err != nil {
 			// Log warn since the caller is at fault.
-			c.log.WithField("request", req).Warn("dropping invalid request")
+			c.log.WithError(err).Warn("dropping invalid request")
 			return status.Errorf(codes.InvalidArgument, err.Error())
 		}
 	}
@@ -90,7 +90,7 @@ func (c *clientStreamWrapper) RecvMsg(res interface{}) error {
 	if v, ok := res.(Validator); ok {
 		if err := v.Validate(); err != nil {
 			// Just log debug here since the outbound service is mis-behaving.
-			c.log.WithField("response", res).Debug("dropping invalid response")
+			c.log.WithError(err).Debug("dropping invalid response")
 			return status.Errorf(codes.Internal, err.Error())
 		}
 	}

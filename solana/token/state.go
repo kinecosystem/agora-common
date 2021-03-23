@@ -65,7 +65,7 @@ func writeKey(dst []byte, src []byte, offset *int) {
 
 func writeOptionalKey(dst []byte, src []byte, offset *int) {
 	if len(src) > 0 {
-		src[0] = 1
+		dst[0] = 1
 		copy(dst[4:], src)
 	}
 

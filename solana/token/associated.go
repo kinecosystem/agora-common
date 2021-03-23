@@ -1,7 +1,10 @@
 package token
 
 import (
+	"bytes"
 	"crypto/ed25519"
+
+	"github.com/pkg/errors"
 
 	"github.com/kinecosystem/agora-common/solana"
 	"github.com/kinecosystem/agora-common/solana/system"
@@ -25,10 +28,10 @@ func GetAssociatedAccount(wallet, mint ed25519.PublicKey) (ed25519.PublicKey, er
 }
 
 // Reference: https://github.com/solana-labs/solana-program-library/blob/0639953c7dd0f5228c3ceda3ba68fece3b46ff1d/associated-token-account/program/src/lib.rs#L54
-func CreateAssociatedTokenAccount(subsidizer, wallet, mint ed25519.PublicKey) (solana.Instruction, error) {
+func CreateAssociatedTokenAccount(subsidizer, wallet, mint ed25519.PublicKey) (solana.Instruction, ed25519.PublicKey, error) {
 	addr, err := GetAssociatedAccount(wallet, mint)
 	if err != nil {
-		return solana.Instruction{}, err
+		return solana.Instruction{}, nil, err
 	}
 
 	return solana.NewInstruction(
@@ -41,5 +44,46 @@ func CreateAssociatedTokenAccount(subsidizer, wallet, mint ed25519.PublicKey) (s
 		solana.NewReadonlyAccountMeta(system.ProgramKey[:], false),
 		solana.NewReadonlyAccountMeta(ProgramKey, false),
 		solana.NewReadonlyAccountMeta(system.RentSysVar, false),
-	), nil
+	), addr, nil
+}
+
+type DecompiledCreateAssociatedAccount struct {
+	Subsidizer ed25519.PublicKey
+	Address    ed25519.PublicKey
+	Owner      ed25519.PublicKey
+	Mint       ed25519.PublicKey
+}
+
+func DecompileCreateAssociatedAccount(m solana.Message, index int) (*DecompiledCreateAssociatedAccount, error) {
+	if index >= len(m.Instructions) {
+		return nil, errors.Errorf("instruction doesn't exist at %d", index)
+	}
+
+	i := m.Instructions[index]
+	if !bytes.Equal(m.Accounts[i.ProgramIndex], AssociatedTokenAccountProgramKey) {
+		return nil, solana.ErrIncorrectProgram
+	}
+	if len(i.Data) != 0 {
+		return nil, errors.Errorf("unexpected data")
+	}
+	if len(i.Accounts) != 7 {
+		return nil, errors.Errorf("invalid number of accounts: %d (expected %d)", len(i.Accounts), 7)
+	}
+
+	if !bytes.Equal(m.Accounts[i.Accounts[4]], system.ProgramKey[:]) {
+		return nil, errors.Errorf("system program key mismatch")
+	}
+	if !bytes.Equal(m.Accounts[i.Accounts[5]], ProgramKey) {
+		return nil, errors.Errorf("token program key mismatch")
+	}
+	if !bytes.Equal(m.Accounts[i.Accounts[6]], system.RentSysVar) {
+		return nil, errors.Errorf("rent sysvar mismatch")
+	}
+
+	return &DecompiledCreateAssociatedAccount{
+		Subsidizer: m.Accounts[i.Accounts[0]],
+		Address:    m.Accounts[i.Accounts[1]],
+		Owner:      m.Accounts[i.Accounts[2]],
+		Mint:       m.Accounts[i.Accounts[3]],
+	}, nil
 }

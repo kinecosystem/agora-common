@@ -74,3 +74,16 @@ func TestKinToQuarks(t *testing.T) {
 		assert.Equal(t, int64(0), actual)
 	}
 }
+
+func TestIsValidAppID(t *testing.T) {
+	assert.True(t, IsValidAppID("test"))
+
+	// too short
+	assert.False(t, IsValidAppID("te"))
+
+	// too long
+	assert.False(t, IsValidAppID("testtest"))
+
+	// invalid characters
+	assert.False(t, IsValidAppID("tes!"))
+}
