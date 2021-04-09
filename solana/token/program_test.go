@@ -336,14 +336,17 @@ func TestCloseAccount(t *testing.T) {
 	instruction.Accounts = instruction.Accounts[:2]
 	decompiled, err = DecompileCloseAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
+	assert.Nil(t, decompiled)
 
 	instruction.Data = append(instruction.Data, 1)
 	decompiled, err = DecompileCloseAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+	assert.Nil(t, decompiled)
 
 	instruction.Data = []byte{byte(CommandTransfer)}
 	decompiled, err = DecompileCloseAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+	assert.Nil(t, decompiled)
 }
 
 func generateKeys(t *testing.T, amount int) []ed25519.PublicKey {
