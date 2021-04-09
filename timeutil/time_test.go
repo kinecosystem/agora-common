@@ -6,8 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestSafeUnix(t *testing.T) {
@@ -239,52 +238,52 @@ func TestToTimestamp(t *testing.T) {
 	tests := []struct {
 		name  string
 		given time.Time
-		want  *timestamp.Timestamp
+		want  *timestamppb.Timestamp
 	}{
 		{
 			name:  "Before Zero",
 			given: time.Time{}.Add(-5 * time.Second),
-			want:  mustTimestamp(t, time.Time{}),
+			want:  timestamppb.New(time.Time{}),
 		},
 		{
 			name:  "Nanosecond Before Zero",
 			given: time.Time{}.Add(-1 * time.Nanosecond),
-			want:  mustTimestamp(t, time.Time{}),
+			want:  timestamppb.New(time.Time{}),
 		},
 		{
 			name:  "Zero",
 			given: time.Time{},
-			want:  mustTimestamp(t, time.Time{}),
+			want:  timestamppb.New(time.Time{}),
 		},
 		{
 			name:  "After Zero",
 			given: time.Time{}.Add(5 * time.Minute),
-			want:  mustTimestamp(t, time.Time{}.Add(5*time.Minute)),
+			want:  timestamppb.New(time.Time{}.Add(5 * time.Minute)),
 		},
 		{
 			name:  "Now",
 			given: now,
-			want:  mustTimestamp(t, now),
+			want:  timestamppb.New(now),
 		},
 		{
 			name:  "Before Max",
 			given: time.Unix(MaxTimestampSeconds-1, 0),
-			want:  mustTimestamp(t, time.Unix(MaxTimestampSeconds-1, 0)),
+			want:  timestamppb.New(time.Unix(MaxTimestampSeconds-1, 0)),
 		},
 		{
 			name:  "Max",
 			given: time.Unix(MaxTimestampSeconds, MaxTimestampNanos),
-			want:  mustTimestamp(t, time.Unix(MaxTimestampSeconds, MaxTimestampNanos)),
+			want:  timestamppb.New(time.Unix(MaxTimestampSeconds, MaxTimestampNanos)),
 		},
 		{
 			name:  "Nanosecond After Max",
 			given: time.Unix(MaxTimestampSeconds, MaxTimestampNanos+1),
-			want:  mustTimestamp(t, time.Unix(MaxTimestampSeconds, MaxTimestampNanos)),
+			want:  timestamppb.New(time.Unix(MaxTimestampSeconds, MaxTimestampNanos)),
 		},
 		{
 			name:  "After Max",
 			given: time.Unix(MaxTimestampSeconds+1, 0),
-			want:  mustTimestamp(t, time.Unix(MaxTimestampSeconds, MaxTimestampNanos)),
+			want:  timestamppb.New(time.Unix(MaxTimestampSeconds, MaxTimestampNanos)),
 		},
 	}
 	for _, tt := range tests {
@@ -300,12 +299,12 @@ func TestFromTimestamp(t *testing.T) {
 	now := time.Now()
 	tests := []struct {
 		name  string
-		given *timestamp.Timestamp
+		given *timestamppb.Timestamp
 		want  time.Time
 	}{
 		{
 			name: "Before Zero",
-			given: &timestamp.Timestamp{
+			given: &timestamppb.Timestamp{
 				Seconds: MinTimestampSeconds - 1,
 				Nanos:   0,
 			},
@@ -313,7 +312,7 @@ func TestFromTimestamp(t *testing.T) {
 		},
 		{
 			name: "Nanosecond Before Zero",
-			given: &timestamp.Timestamp{
+			given: &timestamppb.Timestamp{
 				Seconds: MinTimestampSeconds,
 				Nanos:   -1,
 			},
@@ -321,37 +320,37 @@ func TestFromTimestamp(t *testing.T) {
 		},
 		{
 			name:  "Zero",
-			given: mustTimestamp(t, time.Time{}),
+			given: timestamppb.New(time.Time{}),
 			want:  time.Unix(MinTimestampSeconds, 0),
 		},
 		{
 			name:  "After Zero",
-			given: mustTimestamp(t, time.Time{}.Add(5*time.Minute)),
+			given: timestamppb.New(time.Time{}.Add(5 * time.Minute)),
 			want:  time.Time{}.Add(5 * time.Minute),
 		},
 		{
 			name:  "Now",
-			given: mustTimestamp(t, now),
+			given: timestamppb.New(now),
 			want:  now,
 		},
 		{
 			name:  "Before Max",
-			given: mustTimestamp(t, time.Unix(MaxTimestampSeconds-1, 0)),
+			given: timestamppb.New(time.Unix(MaxTimestampSeconds-1, 0)),
 			want:  time.Unix(MaxTimestampSeconds-1, 0),
 		},
 		{
 			name:  "After Max Seconds",
-			given: mustTimestamp(t, time.Unix(MaxTimestampSeconds, 1)),
+			given: timestamppb.New(time.Unix(MaxTimestampSeconds, 1)),
 			want:  time.Unix(MaxTimestampSeconds, 1),
 		},
 		{
 			name:  "Max",
-			given: mustTimestamp(t, time.Unix(MaxTimestampSeconds, MaxTimestampNanos)),
+			given: timestamppb.New(time.Unix(MaxTimestampSeconds, MaxTimestampNanos)),
 			want:  time.Unix(MaxTimestampSeconds, MaxTimestampNanos),
 		},
 		{
 			name: "Nanosecond After Max",
-			given: &timestamp.Timestamp{
+			given: &timestamppb.Timestamp{
 				Seconds: MaxTimestampSeconds,
 				Nanos:   1e9,
 			},
@@ -359,7 +358,7 @@ func TestFromTimestamp(t *testing.T) {
 		},
 		{
 			name: "After Max",
-			given: &timestamp.Timestamp{
+			given: &timestamppb.Timestamp{
 				Seconds: MaxTimestampSeconds + 1,
 				Nanos:   0,
 			},
@@ -373,12 +372,4 @@ func TestFromTimestamp(t *testing.T) {
 			}
 		})
 	}
-}
-
-func mustTimestamp(t *testing.T, date time.Time) *timestamp.Timestamp {
-	ts, err := ptypes.TimestampProto(date)
-	if err != nil {
-		t.Errorf("Failed to parse timestamp, given err: %s", err.Error())
-	}
-	return ts
 }

@@ -15,12 +15,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/sqsiface"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/google/uuid"
 	"github.com/ory/dockertest"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	sqstest "github.com/kinecosystem/agora-common/aws/sqs/test"
 	"github.com/kinecosystem/agora-common/taskqueue/model/task"
@@ -137,7 +137,7 @@ func TestTaskQueue_RawB64Encoding(t *testing.T) {
 			TypeName: "type",
 			RawValue: []byte("message"),
 		},
-		SubmissionTime: ptypes.TimestampNow(),
+		SubmissionTime: timestamppb.Now(),
 	}
 
 	rawWrapper, err := proto.Marshal(wrapper)

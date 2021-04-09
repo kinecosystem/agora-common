@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"go.etcd.io/etcd/clientv3"
+	"go.etcd.io/etcd/client/v3"
 
 	"github.com/kinecosystem/agora-common/config"
 	"github.com/kinecosystem/agora-common/config/wrapper"

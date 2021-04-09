@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package echo.v1;
 
-option go_package = "examples/echo";
+option go_package = "examples/test";
 
 import "google/protobuf/duration.proto";
 

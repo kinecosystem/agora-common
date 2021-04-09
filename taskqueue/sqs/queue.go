@@ -12,9 +12,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/sqsiface"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/kinecosystem/agora-common/taskqueue"
 	"github.com/kinecosystem/agora-common/taskqueue/model/task"
@@ -351,7 +351,7 @@ func marshalTask(msg *task.Message) (string, error) {
 
 	taskWrapper := &task.Wrapper{
 		Message:        msg,
-		SubmissionTime: ptypes.TimestampNow(),
+		SubmissionTime: timestamppb.Now(),
 	}
 
 	bytes, err := proto.Marshal(taskWrapper)

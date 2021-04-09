@@ -12,8 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/gorilla/websocket"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	log "github.com/sirupsen/logrus"
@@ -22,6 +20,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/kinecosystem/agora-common/httpgateway/test"
 )
@@ -147,7 +147,7 @@ func TestStream_Happy(t *testing.T) {
 		Message:     "hello",
 		Repetitions: 2,
 		Responses:   3,
-		Interval:    ptypes.DurationProto(50 * time.Millisecond),
+		Interval:    durationpb.New(50 * time.Millisecond),
 	})
 	require.NoError(t, err)
 
@@ -184,7 +184,7 @@ func TestStream_ErrorCodes(t *testing.T) {
 			Message:      "hello",
 			Repetitions:  2,
 			Responses:    10,
-			Interval:     ptypes.DurationProto(50 * time.Millisecond),
+			Interval:     durationpb.New(50 * time.Millisecond),
 			StatusCode:   int32(i),
 			FailureIndex: 1,
 		})
@@ -213,7 +213,7 @@ func TestStream_NoWebsocket(t *testing.T) {
 		Message:     "hello",
 		Repetitions: 2,
 		Responses:   3,
-		Interval:    ptypes.DurationProto(50 * time.Millisecond),
+		Interval:    durationpb.New(50 * time.Millisecond),
 	})
 	require.NoError(t, err)
 
@@ -226,7 +226,9 @@ func TestStream_NoWebsocket(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
 
-type serv struct{}
+type serv struct {
+	test.UnimplementedEchoServer
+}
 
 func (s serv) Echo(_ context.Context, req *test.EchoRequest) (*test.EchoResponse, error) {
 	if req.StatusCode != 0 {
@@ -253,12 +255,11 @@ func (s serv) EchoStream(req *test.EchoStreamRequest, stream test.Echo_EchoStrea
 			return nil
 		}
 
-		interval, err := ptypes.Duration(req.Interval)
 		if err != nil {
 			log.WithError(err).Info("Failed to parse duration")
 			return status.Error(codes.InvalidArgument, "bad duration")
 		}
-		time.Sleep(interval)
+		time.Sleep(req.Interval.AsDuration())
 	}
 
 	return nil
