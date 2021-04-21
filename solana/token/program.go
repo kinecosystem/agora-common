@@ -299,8 +299,6 @@ func DecompileSetAuthority(m solana.Message, index int) (*DecompiledSetAuthority
 	return decompiled, nil
 }
 
-// todo(feature): support multi-sig
-//
 // Reference: https://github.com/solana-labs/solana-program-library/blob/b011698251981b5a12088acba18fad1d41c3719a/token/program/src/instruction.rs#L76-L91
 func Transfer(source, dest, owner ed25519.PublicKey, amount uint64) solana.Instruction {
 	// Accounts expected by this instruction:
@@ -323,6 +321,37 @@ func Transfer(source, dest, owner ed25519.PublicKey, amount uint64) solana.Instr
 		ProgramKey,
 		data,
 		solana.NewAccountMeta(source, false),
+		solana.NewAccountMeta(dest, false),
+		solana.NewReadonlyAccountMeta(owner, true),
+	)
+}
+
+// Reference: https://github.com/solana-labs/solana-program-library/blob/b011698251981b5a12088acba18fad1d41c3719a/token/program/src/instruction.rs#L230-L252
+func Transfer2(source, mint, dest, owner ed25519.PublicKey, amount uint64, decimals byte) solana.Instruction {
+	// Accounts expected by this instruction:
+	//
+	//   * Single owner/delegate
+	//   0. `[writable]` The source account.
+	//   1. `[]` The token mint.
+	//   2. `[writable]` The destination account.
+	//   3. `[signer]` The source account's owner/delegate.
+	//
+	//   * Multisignature owner/delegate
+	//   0. `[writable]` The source account.
+	//   1. `[]` The token mint.
+	//   2. `[writable]` The destination account.
+	//   3. `[]` The source account's multisignature owner/delegate.
+	//   4. ..4+M `[signer]` M signer accounts.
+	data := make([]byte, 1+8+1)
+	data[0] = byte(CommandTransfer2)
+	binary.LittleEndian.PutUint64(data[1:], amount)
+	data[9] = decimals
+
+	return solana.NewInstruction(
+		ProgramKey,
+		data,
+		solana.NewAccountMeta(source, false),
+		solana.NewReadonlyAccountMeta(mint, false),
 		solana.NewAccountMeta(dest, false),
 		solana.NewReadonlyAccountMeta(owner, true),
 	)
@@ -394,6 +423,47 @@ func DecompileTransfer(m solana.Message, index int) (*DecompiledTransfer, error)
 		Owner:       m.Accounts[i.Accounts[2]],
 	}
 	v.Amount = binary.LittleEndian.Uint64(i.Data[1:])
+	return v, nil
+}
+
+type DecompiledTransfer2 struct {
+	Source      ed25519.PublicKey
+	Mint        ed25519.PublicKey
+	Destination ed25519.PublicKey
+	Owner       ed25519.PublicKey
+	Amount      uint64
+	Decimals    byte
+}
+
+func DecompileTransfer2(m solana.Message, index int) (*DecompiledTransfer2, error) {
+	if index >= len(m.Instructions) {
+		return nil, errors.Errorf("instruction doesn't exist at %d", index)
+	}
+
+	i := m.Instructions[index]
+
+	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey) {
+		return nil, solana.ErrIncorrectProgram
+	}
+	if len(i.Data) == 0 || i.Data[0] != byte(CommandTransfer2) {
+		return nil, solana.ErrIncorrectInstruction
+	}
+	// note: we do < 4 instead of != 4 in order to support multisig cases.
+	if len(i.Accounts) < 4 {
+		return nil, errors.Errorf("invalid number of accounts: %d", len(i.Accounts))
+	}
+	if len(i.Data) != 10 {
+		return nil, errors.Errorf("invalid instruction data size: %d", len(i.Data))
+	}
+
+	v := &DecompiledTransfer2{
+		Source:      m.Accounts[i.Accounts[0]],
+		Mint:        m.Accounts[i.Accounts[1]],
+		Destination: m.Accounts[i.Accounts[2]],
+		Owner:       m.Accounts[i.Accounts[3]],
+	}
+	v.Amount = binary.LittleEndian.Uint64(i.Data[1:9])
+	v.Decimals = i.Data[9]
 	return v, nil
 }
 

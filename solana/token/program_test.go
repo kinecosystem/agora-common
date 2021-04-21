@@ -253,6 +253,61 @@ func TestTransfer(t *testing.T) {
 	assert.Equal(t, solana.ErrIncorrectProgram, err)
 }
 
+func TestTransfer2(t *testing.T) {
+	keys := generateKeys(t, 5)
+
+	instruction := Transfer2(keys[0], keys[1], keys[2], keys[3], 123456789, 3)
+
+	expectedAmount := make([]byte, 8)
+	binary.LittleEndian.PutUint64(expectedAmount, 123456789)
+
+	assert.EqualValues(t, CommandTransfer2, instruction.Data[0])
+	assert.EqualValues(t, expectedAmount, instruction.Data[1:9])
+	assert.EqualValues(t, 3, instruction.Data[9])
+
+	assert.False(t, instruction.Accounts[0].IsSigner)
+	assert.True(t, instruction.Accounts[0].IsWritable)
+
+	assert.False(t, instruction.Accounts[1].IsSigner)
+	assert.False(t, instruction.Accounts[1].IsWritable)
+
+	assert.False(t, instruction.Accounts[2].IsSigner)
+	assert.True(t, instruction.Accounts[2].IsWritable)
+
+	assert.True(t, instruction.Accounts[3].IsSigner)
+	assert.False(t, instruction.Accounts[3].IsWritable)
+
+	decompiled, err := DecompileTransfer2(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NoError(t, err)
+	assert.EqualValues(t, 123456789, decompiled.Amount)
+	assert.Equal(t, keys[0], decompiled.Source)
+	assert.Equal(t, keys[1], decompiled.Mint)
+	assert.Equal(t, keys[2], decompiled.Destination)
+	assert.Equal(t, keys[3], decompiled.Owner)
+
+	cmd, err := GetCommand(solana.NewTransaction(keys[0], instruction).Message, 0)
+	require.NoError(t, err)
+	assert.Equal(t, CommandTransfer2, cmd)
+
+	instruction.Data = instruction.Data[:1]
+	_, err = DecompileTransfer2(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "invalid instruction data size"))
+
+	instruction.Accounts = instruction.Accounts[:3]
+	_, err = DecompileTransfer2(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
+
+	instruction.Data[0] = byte(CommandApprove)
+	_, err = DecompileTransfer2(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+
+	instruction.Program = keys[3]
+	_, err = DecompileTransfer2(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectProgram, err)
+}
+
 func TestTransferMultisig(t *testing.T) {
 	keys := generateKeys(t, 6)
 
@@ -334,17 +389,17 @@ func TestCloseAccount(t *testing.T) {
 	assert.Equal(t, keys[2], decompiled.Owner)
 
 	instruction.Accounts = instruction.Accounts[:2]
-	_, err = DecompileCloseAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
+	decompiled, err = DecompileCloseAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
 	assert.Nil(t, decompiled)
 
 	instruction.Data = append(instruction.Data, 1)
-	_, err = DecompileCloseAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
+	decompiled, err = DecompileCloseAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 	assert.Nil(t, decompiled)
 
 	instruction.Data = []byte{byte(CommandTransfer)}
-	_, err = DecompileCloseAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
+	decompiled, err = DecompileCloseAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 	assert.Nil(t, decompiled)
 }
