@@ -65,6 +65,10 @@ func TestInitializeAccount(t *testing.T) {
 	_, err = DecompileInitializeAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
+	instruction.Data = nil
+	_, err = DecompileInitializeAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+
 	instruction.Program = keys[3]
 	_, err = DecompileInitializeAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectProgram, err)
@@ -110,6 +114,10 @@ func TestSetAuthority(t *testing.T) {
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
+	instruction.Data = nil
+	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+
 	instruction.Program = keys[0]
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectProgram, err)
@@ -147,6 +155,10 @@ func TestSetAuthority_NoNewAuthority(t *testing.T) {
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
 
 	instruction.Data[0] = byte(CommandApprove)
+	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+
+	instruction.Data = nil
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
@@ -188,6 +200,10 @@ func TestSetAuthority_Multisig(t *testing.T) {
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
 
 	instruction.Data[0] = byte(CommandApprove)
+	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+
+	instruction.Data = nil
 	_, err = DecompileSetAuthority(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
@@ -248,6 +264,10 @@ func TestTransfer(t *testing.T) {
 	_, err = DecompileTransfer(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
+	instruction.Data = nil
+	_, err = DecompileTransfer(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+
 	instruction.Program = keys[3]
 	_, err = DecompileTransfer(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectProgram, err)
@@ -300,6 +320,10 @@ func TestTransfer2(t *testing.T) {
 	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
 
 	instruction.Data[0] = byte(CommandApprove)
+	_, err = DecompileTransfer2(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+
+	instruction.Data = nil
 	_, err = DecompileTransfer2(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
@@ -359,6 +383,10 @@ func TestTransferMultisig(t *testing.T) {
 	_, err = DecompileTransfer(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
+	instruction.Data = nil
+	_, err = DecompileTransfer(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+
 	instruction.Program = keys[3]
 	_, err = DecompileTransfer(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectProgram, err)
@@ -399,6 +427,11 @@ func TestCloseAccount(t *testing.T) {
 	assert.Nil(t, decompiled)
 
 	instruction.Data = []byte{byte(CommandTransfer)}
+	decompiled, err = DecompileCloseAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+	assert.Nil(t, decompiled)
+
+	instruction.Data = nil
 	decompiled, err = DecompileCloseAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 	assert.Nil(t, decompiled)

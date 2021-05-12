@@ -270,7 +270,7 @@ func DecompileSetAuthority(m solana.Message, index int) (*DecompiledSetAuthority
 	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey) {
 		return nil, solana.ErrIncorrectProgram
 	}
-	if i.Data[0] != byte(CommandSetAuthority) {
+	if !bytes.HasPrefix(i.Data, []byte{byte(CommandSetAuthority)}) {
 		return nil, solana.ErrIncorrectInstruction
 	}
 	if len(i.Accounts) < 2 {
@@ -406,7 +406,7 @@ func DecompileTransfer(m solana.Message, index int) (*DecompiledTransfer, error)
 	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey) {
 		return nil, solana.ErrIncorrectProgram
 	}
-	if len(i.Data) == 0 || i.Data[0] != byte(CommandTransfer) {
+	if !bytes.HasPrefix(i.Data, []byte{byte(CommandTransfer)}) {
 		return nil, solana.ErrIncorrectInstruction
 	}
 	// note: we do < 3 instead of != 3 in order to support multisig cases.
@@ -445,7 +445,7 @@ func DecompileTransfer2(m solana.Message, index int) (*DecompiledTransfer2, erro
 	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey) {
 		return nil, solana.ErrIncorrectProgram
 	}
-	if len(i.Data) == 0 || i.Data[0] != byte(CommandTransfer2) {
+	if !bytes.HasPrefix(i.Data, []byte{byte(CommandTransfer2)}) {
 		return nil, solana.ErrIncorrectInstruction
 	}
 	// note: we do < 4 instead of != 4 in order to support multisig cases.
@@ -509,7 +509,7 @@ func DecompileCloseAccount(m solana.Message, index int) (*DecompiledCloseAccount
 	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey) {
 		return nil, solana.ErrIncorrectProgram
 	}
-	if len(i.Data) != 1 || i.Data[0] != byte(CommandCloseAccount) {
+	if !bytes.Equal(i.Data, []byte{byte(CommandCloseAccount)}) {
 		return nil, solana.ErrIncorrectInstruction
 	}
 	// note: we do < 3 instead of != 3 in order to support multisig cases.
