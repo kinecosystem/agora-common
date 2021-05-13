@@ -694,9 +694,11 @@ func (c *client) GetTokenAccountsByOwner(owner, mint ed25519.PublicKey) ([]ed255
 		Mint: base58.Encode(mint),
 	}
 	config := struct {
-		Encoding string `json:"encoding"`
+		Encoding   string `json:"encoding"`
+		Commitment Commitment
 	}{
-		Encoding: "base64",
+		Encoding:   "base64",
+		Commitment: CommitmentSingle,
 	}
 
 	var resp struct {
