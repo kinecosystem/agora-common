@@ -658,6 +658,25 @@ func TestParseTransaction_InvalidInstructions(t *testing.T) {
 	}
 }
 
+func TestParseTransaction_NoSignatures(t *testing.T) {
+	keys := generateKeys(t, 4)
+
+	tx := solana.NewTransaction(
+		keys[0],
+		token.Transfer(
+			keys[1],
+			keys[2],
+			keys[3],
+			10,
+		),
+	)
+	tx.Signatures = nil
+
+	_, err := ParseTransaction(tx, nil)
+	assert.Error(t, err)
+	assert.EqualError(t, err, "no allocated signatures")
+}
+
 func getInvoiceMemoInstruction(t *testing.T, txType TransactionType, appIndex, transferCount int) solana.Instruction {
 	il := &commonpb.InvoiceList{}
 	for i := 0; i < transferCount; i++ {

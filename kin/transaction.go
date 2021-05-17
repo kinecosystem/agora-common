@@ -71,6 +71,9 @@ func ParseTransaction(
 	if len(tx.Message.Instructions) == 0 {
 		return parsed, errors.New("no instructions")
 	}
+	if len(tx.Signatures) == 0 {
+		return parsed, errors.New("no allocated signatures")
+	}
 
 	parsed.Regions = make([]Region, 1)
 
