@@ -17,7 +17,7 @@ var MinuteDistributionBuckets = append(
 		0.5,
 		1.0,
 	},
-	prometheus.LinearBuckets(5.0, 5.0, 12)...,
+	prometheus.LinearBuckets(2.0, 1.0, 30)...,
 )
 
 // Register regsiters the provided prometheus collector, or returns
