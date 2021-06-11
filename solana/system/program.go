@@ -82,19 +82,22 @@ func DecompileCreateAccount(m solana.Message, index int) (*DecompiledCreateAccou
 		return nil, errors.Errorf("instruction doesn't exist at %d", index)
 	}
 
+	var prefix [4]byte
+	binary.LittleEndian.PutUint32(prefix[:], commandCreateAccount)
 	i := m.Instructions[index]
 
 	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey[:]) {
 		return nil, solana.ErrIncorrectProgram
 	}
+	if !bytes.HasPrefix(i.Data, prefix[:]) {
+		return nil, solana.ErrIncorrectInstruction
+	}
+
 	if len(i.Accounts) != 2 {
 		return nil, errors.Errorf("invalid number of accounts: %d", len(i.Accounts))
 	}
 	if len(i.Data) != 52 {
 		return nil, errors.Errorf("invalid instruction data size: %d", len(i.Data))
-	}
-	if binary.BigEndian.Uint32(i.Data) != commandCreateAccount {
-		return nil, solana.ErrIncorrectInstruction
 	}
 
 	v := &DecompiledCreateAccount{
@@ -125,6 +128,39 @@ func AdvanceNonce(account, authority ed25519.PublicKey) solana.Instruction {
 		solana.NewReadonlyAccountMeta(RecentBlockhashesSysVar, false),
 		solana.NewReadonlyAccountMeta(authority, true),
 	)
+}
+
+type DecompiledAdvanceNonce struct {
+	Account   ed25519.PublicKey
+	Authority ed25519.PublicKey
+}
+
+func DecompileAdvanceNonce(m solana.Message, index int) (*DecompiledAdvanceNonce, error) {
+	if index >= len(m.Instructions) {
+		return nil, errors.Errorf("instruction doesn't exist at %d", index)
+	}
+
+	var prefix [4]byte
+	binary.LittleEndian.PutUint32(prefix[:], commandAdvanceNonceAccount)
+	i := m.Instructions[index]
+
+	if !bytes.Equal(m.Accounts[i.ProgramIndex], ProgramKey[:]) {
+		return nil, solana.ErrIncorrectProgram
+	}
+	if !bytes.Equal(i.Data, prefix[:]) {
+		return nil, solana.ErrIncorrectInstruction
+	}
+	if len(i.Accounts) != 3 {
+		return nil, errors.Errorf("invalid number of accounts: %d", len(i.Accounts))
+	}
+	if !bytes.Equal(RecentBlockhashesSysVar, m.Accounts[i.Accounts[1]]) {
+		return nil, errors.Errorf("invalid RecentBlockhashesSysVar")
+	}
+
+	return &DecompiledAdvanceNonce{
+		Account:   m.Accounts[i.Accounts[0]],
+		Authority: m.Accounts[i.Accounts[2]],
+	}, nil
 }
 
 // GetNonceValueFromAccount returns the nonce value of a nonce account.

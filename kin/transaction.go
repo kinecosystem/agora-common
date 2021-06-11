@@ -20,6 +20,8 @@ type Tx struct {
 	AppIndex uint16
 	AppID    string
 
+	AdvanceNonce *system.DecompiledAdvanceNonce
+
 	Regions []Region
 }
 
@@ -51,6 +53,7 @@ type Creation struct {
 //   1. Each instruction is one of the following:
 //     - Memo::Memo
 //     - System::CreateAccount
+//     - System::AdvanceNonce
 //     - SplToken::InitializeAccount
 //     - SplAssociatedToken::CreateAssociatedAccount
 //     - SplToken::SetAuthority
@@ -88,6 +91,16 @@ func ParseTransaction(
 				MemoData: m.Data,
 			})
 		} else if isSystem(&tx, i) {
+			advanceNonce, err := system.DecompileAdvanceNonce(tx.Message, i)
+			if err == nil {
+				if parsed.AdvanceNonce != nil {
+					return parsed, errors.New("cannot specify multiple System::AdvanceNonce instructino")
+				}
+
+				parsed.AdvanceNonce = advanceNonce
+				continue
+			}
+
 			creation, err := system.DecompileCreateAccount(tx.Message, i)
 			if err != nil {
 				return parsed, errors.Wrapf(err, "invalid System::CreateAccount at %d", i)

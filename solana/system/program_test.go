@@ -45,19 +45,18 @@ func TestDecompileNonCreate(t *testing.T) {
 
 	instruction := CreateAccount(keys[0], keys[1], keys[2], 12345, 67890)
 
-	binary.BigEndian.PutUint32(instruction.Data, commandAllocate)
+	instruction.Accounts = instruction.Accounts[:1]
 	_, err := DecompileCreateAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NotNil(t, err)
+	assert.True(t, strings.HasPrefix(err.Error(), "invalid number of accounts"), err)
+
+	binary.BigEndian.PutUint32(instruction.Data, commandAllocate)
+	_, err = DecompileCreateAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
 	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
 	instruction.Data = make([]byte, 3)
 	_, err = DecompileCreateAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
-	assert.NotNil(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), "invalid instruction data size"))
-
-	instruction.Accounts = instruction.Accounts[:1]
-	_, err = DecompileCreateAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
-	assert.NotNil(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), "invalid number of accounts"))
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
 
 	instruction.Program = keys[3]
 	_, err = DecompileCreateAccount(solana.NewTransaction(keys[0], instruction).Message, 0)
@@ -69,7 +68,7 @@ func TestDecompileNonCreate(t *testing.T) {
 }
 
 func TestAdvanceNonceAccount(t *testing.T) {
-	keys := generateKeys(t, 2)
+	keys := generateKeys(t, 3)
 
 	instruction := AdvanceNonce(keys[0], keys[1])
 
@@ -90,6 +89,33 @@ func TestAdvanceNonceAccount(t *testing.T) {
 
 	assert.EqualValues(t, keys[1], instruction.Accounts[2].PublicKey)
 	assert.True(t, instruction.Accounts[2].IsSigner)
+
+	decompiled, err := DecompileAdvanceNonce(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NoError(t, err)
+	assert.EqualValues(t, keys[0], decompiled.Account)
+	assert.EqualValues(t, keys[1], decompiled.Authority)
+
+	instruction.Accounts[1].PublicKey = keys[2]
+	_, err = DecompileAdvanceNonce(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "invalid RecentBlockhashesSysVar"))
+
+	instruction.Accounts = instruction.Accounts[:1]
+	_, err = DecompileAdvanceNonce(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.NotNil(t, err)
+	assert.True(t, strings.Contains(err.Error(), "invalid number of accounts"))
+
+	binary.LittleEndian.PutUint32(instruction.Data, commandCreateAccount)
+	_, err = DecompileAdvanceNonce(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+
+	instruction.Data = nil
+	_, err = DecompileAdvanceNonce(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectInstruction, err)
+
+	instruction.Program = keys[2]
+	_, err = DecompileAdvanceNonce(solana.NewTransaction(keys[0], instruction).Message, 0)
+	assert.Equal(t, solana.ErrIncorrectProgram, err)
 }
 
 func TestGetNonceValue(t *testing.T) {

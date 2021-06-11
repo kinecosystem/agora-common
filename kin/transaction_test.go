@@ -124,6 +124,74 @@ func TestParseTransaction_NoInvoices(t *testing.T) {
 	}
 }
 
+func TestParseTransaction_AdvanceNonce(t *testing.T) {
+	keys := generateKeys(t, 7)
+
+	//
+	// Regular transfer
+	//
+	input := solana.NewTransaction(
+		keys[0],
+		system.AdvanceNonce(
+			keys[5],
+			keys[6],
+		),
+		token.Transfer(
+			keys[1],
+			keys[2],
+			keys[3],
+			10,
+		),
+		token.Transfer(
+			keys[2],
+			keys[3],
+			keys[4],
+			20,
+		),
+	)
+	tx, err := ParseTransaction(input, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, "", tx.AppID)
+	assert.EqualValues(t, 0, tx.AppIndex)
+	assert.Len(t, tx.Regions, 1)
+	assert.Empty(t, tx.Regions[0].Creations)
+	assert.Len(t, tx.Regions[0].Transfers, 2)
+	assert.Empty(t, tx.Regions[0].Closures)
+	assert.NotNil(t, tx.AdvanceNonce)
+	assert.EqualValues(t, tx.AdvanceNonce.Account, keys[5])
+	assert.EqualValues(t, tx.AdvanceNonce.Authority, keys[6])
+
+	instructions := []solana.Instruction{
+		system.AdvanceNonce(
+			keys[5],
+			keys[6],
+		),
+	}
+	instructions = append(instructions, generateCreate(t, keys[0], keys[1], keys[2])...)
+	instructions = append(instructions, token.Transfer(
+		keys[1],
+		keys[2],
+		keys[3],
+		10,
+	))
+	input = solana.NewTransaction(
+		keys[0],
+		instructions...,
+	)
+
+	tx, err = ParseTransaction(input, nil)
+	assert.NoError(t, err)
+	assert.Equal(t, "", tx.AppID)
+	assert.EqualValues(t, 0, tx.AppIndex)
+	assert.Len(t, tx.Regions, 1)
+	assert.Len(t, tx.Regions[0].Creations, 1)
+	assert.Len(t, tx.Regions[0].Transfers, 1)
+	assert.Empty(t, tx.Regions[0].Closures)
+	assert.NotNil(t, tx.AdvanceNonce)
+	assert.EqualValues(t, tx.AdvanceNonce.Account, keys[5])
+	assert.EqualValues(t, tx.AdvanceNonce.Authority, keys[6])
+}
+
 func TestParseTransaction_TextMemo(t *testing.T) {
 	keys := generateKeys(t, 5)
 
@@ -634,10 +702,6 @@ func TestParseTransaction_InvalidInstructions(t *testing.T) {
 			keys[3],
 			10,
 			10,
-		),
-		system.AdvanceNonce(
-			keys[1],
-			keys[2],
 		),
 	}
 
