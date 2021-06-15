@@ -27,7 +27,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.14.6
-	github.com/kinecosystem/agora-api v0.25.0
+	github.com/kinecosystem/agora-api v0.26.1
 	github.com/kinecosystem/go v0.0.0-20191108204735-d6832148266e
 	github.com/kr/pretty v0.2.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
