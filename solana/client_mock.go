@@ -87,12 +87,12 @@ func (m *MockClient) GetBalance(account ed25519.PublicKey) (uint64, error) {
 	return args.Get(0).(uint64), args.Error(1)
 }
 
-func (m *MockClient) SimulateTransaction(txn Transaction) error {
+func (m *MockClient) SimulateTransaction(txn Transaction) (*TransactionError, error) {
 	m.Lock()
 	defer m.Unlock()
 
 	args := m.Called(txn)
-	return args.Error(0)
+	return args.Get(0).(*TransactionError), args.Error(1)
 }
 
 func (m *MockClient) SubmitTransaction(txn Transaction, commitment Commitment) (Signature, *SignatureStatus, error) {

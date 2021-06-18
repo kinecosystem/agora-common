@@ -165,7 +165,7 @@ type Client interface {
 	GetConfirmedBlocksWithLimit(start, limit uint64) ([]uint64, error)
 	GetConfirmedTransaction(Signature) (ConfirmedTransaction, error)
 	GetBalance(ed25519.PublicKey) (uint64, error)
-	SimulateTransaction(Transaction) error
+	SimulateTransaction(Transaction) (*TransactionError, error)
 	SubmitTransaction(Transaction, Commitment) (Signature, *SignatureStatus, error)
 	GetAccountInfo(ed25519.PublicKey, Commitment) (AccountInfo, error)
 	RequestAirdrop(ed25519.PublicKey, uint64, Commitment) (Signature, error)
@@ -444,7 +444,7 @@ func (c *client) GetBalance(account ed25519.PublicKey) (uint64, error) {
 	return 0, errors.Errorf("invalid value in response")
 }
 
-func (c *client) SimulateTransaction(txn Transaction) error {
+func (c *client) SimulateTransaction(txn Transaction) (*TransactionError, error) {
 	type rpcResponse struct {
 		Value struct {
 			Error interface{} `json:"err"`
@@ -454,10 +454,15 @@ func (c *client) SimulateTransaction(txn Transaction) error {
 
 	var resp rpcResponse
 	if err := c.call(&resp, "simulateTransaction", base58.Encode(txn.Marshal()), CommitmentSingle); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	txErr, err := ParseTransactionError(resp.Value.Error)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse simulation error")
+	}
+
+	return txErr, nil
 }
 
 func (c *client) SubmitTransaction(txn Transaction, commitment Commitment) (Signature, *SignatureStatus, error) {
